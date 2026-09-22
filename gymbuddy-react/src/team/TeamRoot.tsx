@@ -105,7 +105,9 @@ export default function TeamRoot() {
           <div className="mt-3 rounded-xl border-2 border-plate bg-plate/10 px-3 py-2 text-sm font-semibold">{toast}</div>
         )}
       </div>
-      <Screen />
+      <main>
+        <Screen />
+      </main>
     </div>
   )
 }

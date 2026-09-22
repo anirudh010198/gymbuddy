@@ -54,7 +54,7 @@ export default function CaseStudy() {
         <SiteHeader />
       </div>
 
-      <div className="mx-auto max-w-[1100px] px-4 pb-16 sm:px-6">
+      <main className="mx-auto max-w-[1100px] px-4 pb-16 sm:px-6">
         <div className="border-b border-line py-10 print:py-4">
           <h1 className="font-display font-extrabold leading-none" style={{ fontSize: 'clamp(2.4rem, 5vw, 3.4rem)' }}>
             Case study
@@ -318,7 +318,7 @@ export default function CaseStudy() {
             </Section>
           </div>
         </div>
-      </div>
+      </main>
 
       <div className="print:hidden">
         <SiteFooter />

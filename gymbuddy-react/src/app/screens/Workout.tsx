@@ -104,7 +104,9 @@ export default function Workout() {
             Home
           </button>
           <Tag>
-            {done}/{total} sets
+            <span data-testid="sets-progress">
+              {done}/{total} sets
+            </span>
           </Tag>
         </div>
         <h1 className="mt-3 font-display font-extrabold leading-none" style={{ fontSize: '2.4rem' }}>

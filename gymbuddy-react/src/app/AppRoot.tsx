@@ -30,13 +30,16 @@ const SCREENS: Record<ScreenName, ComponentType> = {
   home: TabsShell,
 }
 
-export default function AppRoot() {
+export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
   const screen = useScreen()
   const reduce = useReducedMotion()
   const Screen = SCREENS[screen]
+  // The landing page embeds a second copy of this tree in its phone-frame demo —
+  // asMain=false there so the page doesn't end up with two <main> landmarks.
+  const Wrapper = asMain ? 'main' : 'div'
 
   return (
-    <div className="min-h-screen bg-bg font-sans text-ink">
+    <Wrapper className="min-h-screen bg-bg font-sans text-ink">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={screen}
@@ -48,6 +51,6 @@ export default function AppRoot() {
           <Screen />
         </motion.div>
       </AnimatePresence>
-    </div>
+    </Wrapper>
   )
 }

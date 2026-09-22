@@ -49,7 +49,7 @@ export default function Landing() {
   return (
     <div className="bg-bg text-ink">
       <SiteHeader />
-
+      <main>
       {/* HERO */}
       <section className="relative overflow-hidden bg-rubber text-chalk">
         {HERO_IMAGE_URL ? (
@@ -98,7 +98,7 @@ export default function Landing() {
           <div className="hidden justify-self-center lg:flex">
             <GymStoreProvider store={demoStore}>
               <PhoneFrame width={280} height={600}>
-                <AppRoot />
+                <AppRoot asMain={false} />
               </PhoneFrame>
             </GymStoreProvider>
           </div>
@@ -207,6 +207,7 @@ export default function Landing() {
           Start today's workout
         </Link>
       </section>
+      </main>
 
       <SiteFooter />
     </div>

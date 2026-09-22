@@ -32,7 +32,7 @@ export default function Home() {
       <Card className="mt-4 p-5">
         <div className="flex items-end justify-between">
           <div>
-            <div className="font-display font-extrabold leading-none" style={{ fontSize: '3.4rem' }}>
+            <div data-testid="week-count" className="font-display font-extrabold leading-none" style={{ fontSize: '3.4rem' }}>
               {wc}
               <span className="text-muted" style={{ fontSize: '1.8rem' }}>
                 /{profile.target}
@@ -41,7 +41,7 @@ export default function Home() {
             <div className="font-semibold text-muted">workouts this week</div>
           </div>
           <div className="text-right">
-            <div className="font-display font-extrabold leading-none" style={{ fontSize: '2.2rem' }}>
+            <div data-testid="week-streak" className="font-display font-extrabold leading-none" style={{ fontSize: '2.2rem' }}>
               {st}
             </div>
             <div className="text-sm font-semibold text-muted">week streak</div>
