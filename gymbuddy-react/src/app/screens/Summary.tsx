@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useGymStore } from '../../store/useGymStore'
+import { useGym } from '../../store/GymStoreContext'
 import { streakWeeks, weekCount } from '../../engine/streak'
 import { today, weekStart } from '../../engine/dates'
 import { BY_ID } from '../../engine/exercises'
@@ -14,10 +14,10 @@ import { buildShareImage } from '../lib/shareCard'
 const FEELS = ['Too easy', 'About right', 'Too hard'] as const
 
 export default function Summary() {
-  const history = useGymStore((s) => s.history)
-  const profile = useGymStore((s) => s.profile)!
-  const setFeel = useGymStore((s) => s.setFeel)
-  const dismissSummary = useGymStore((s) => s.dismissSummary)
+  const history = useGym((s) => s.history)
+  const profile = useGym((s) => s.profile)!
+  const setFeel = useGym((s) => s.setFeel)
+  const dismissSummary = useGym((s) => s.dismissSummary)
   const [tipsOpen, setTipsOpen] = useState(false)
   const [preview, setPreview] = useState<SwapInfo | null>(null)
   const [canShare, setCanShare] = useState(false)

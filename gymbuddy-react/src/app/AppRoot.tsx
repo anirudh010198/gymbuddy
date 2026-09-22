@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { useGymStore } from '../store/useGymStore'
+import { useGym } from '../store/GymStoreContext'
 import { today } from '../engine/dates'
 import Onboarding from './screens/Onboarding'
 import Workout from './screens/Workout'
@@ -10,11 +10,11 @@ import TabsShell from './TabsShell'
 type ScreenName = 'onboarding' | 'workout' | 'summary' | 'home'
 
 function useScreen(): ScreenName {
-  const profile = useGymStore((s) => s.profile)
-  const active = useGymStore((s) => s.active)
-  const lastDone = useGymStore((s) => s.lastDone)
-  const showSummary = useGymStore((s) => s.showSummary)
-  const peekHome = useGymStore((s) => s.peekHome)
+  const profile = useGym((s) => s.profile)
+  const active = useGym((s) => s.active)
+  const lastDone = useGym((s) => s.lastDone)
+  const showSummary = useGym((s) => s.showSummary)
+  const peekHome = useGym((s) => s.peekHome)
 
   if (!profile) return 'onboarding'
   if (peekHome) return 'home'

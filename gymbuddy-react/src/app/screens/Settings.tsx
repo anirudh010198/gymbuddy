@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import { useGymStore } from '../../store/useGymStore'
+import { useGym } from '../../store/GymStoreContext'
 import { EQUIP_OPTIONS, GOALS } from '../../engine/goals'
 import type { Equip, GoalKey } from '../../engine/types'
 import { Wrap, Card, Chip, GhostButton } from '../components/ui'
 
 export default function Settings() {
-  const profile = useGymStore((s) => s.profile)!
-  const history = useGymStore((s) => s.history)
-  const events = useGymStore((s) => s.events)
-  const updateProfile = useGymStore((s) => s.updateProfile)
-  const resetData = useGymStore((s) => s.resetData)
+  const profile = useGym((s) => s.profile)!
+  const history = useGym((s) => s.history)
+  const events = useGym((s) => s.events)
+  const updateProfile = useGym((s) => s.updateProfile)
+  const resetData = useGym((s) => s.resetData)
   const [confirmReset, setConfirmReset] = useState(false)
 
   function toggleEquip(k: Equip) {

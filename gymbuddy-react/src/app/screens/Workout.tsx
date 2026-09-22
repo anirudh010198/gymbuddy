@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { useGymStore } from '../../store/useGymStore'
+import { useGym } from '../../store/GymStoreContext'
 import { BY_ID } from '../../engine/exercises'
 import { GROUP_LABEL } from '../../engine/templates'
 import { GOALS, SETS } from '../../engine/goals'
@@ -25,14 +25,14 @@ function formatSetLabel(reps: number, weight: number | null) {
 }
 
 export default function Workout() {
-  const active = useGymStore((s) => s.active)!
-  const profile = useGymStore((s) => s.profile)!
-  const history = useGymStore((s) => s.history)
-  const logSet = useGymStore((s) => s.logSet)
-  const setSetValues = useGymStore((s) => s.setSetValues)
-  const requestSwap = useGymStore((s) => s.requestSwap)
-  const finishWorkout = useGymStore((s) => s.finishWorkout)
-  const setPeekHome = useGymStore((s) => s.setPeekHome)
+  const active = useGym((s) => s.active)!
+  const profile = useGym((s) => s.profile)!
+  const history = useGym((s) => s.history)
+  const logSet = useGym((s) => s.logSet)
+  const setSetValues = useGym((s) => s.setSetValues)
+  const requestSwap = useGym((s) => s.requestSwap)
+  const finishWorkout = useGym((s) => s.finishWorkout)
+  const setPeekHome = useGym((s) => s.setPeekHome)
   const reduce = useReducedMotion()
 
   const [swapIndex, setSwapIndex] = useState<number | null>(null)

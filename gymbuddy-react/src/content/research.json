@@ -1,0 +1,8 @@
+{
+  "interviews": [],
+  "insights": [],
+  "killedHypothesis": "",
+  "funnel": { "approached": null, "tried": null, "completed": null, "wouldReuse": null, "returned": null },
+  "metrics": { "week1Repeat": null, "swapConversion": null, "setCompletion": null, "sampleSize": null },
+  "iteration": { "saw": "", "assumed": "", "changed": "", "result": "" }
+}

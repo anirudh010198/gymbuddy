@@ -1,4 +1,4 @@
-import { useGymStore } from '../../store/useGymStore'
+import { useGym } from '../../store/GymStoreContext'
 import { streakWeeks, trainedToday, weekCount } from '../../engine/streak'
 import { GOALS } from '../../engine/goals'
 import { today, weekStart } from '../../engine/dates'
@@ -7,11 +7,11 @@ import ProgressBar from '../components/ProgressBar'
 import WeekDots from '../components/WeekDots'
 
 export default function Home() {
-  const profile = useGymStore((s) => s.profile)!
-  const history = useGymStore((s) => s.history)
-  const active = useGymStore((s) => s.active)
-  const startWorkout = useGymStore((s) => s.startWorkout)
-  const changeGoal = useGymStore((s) => s.changeGoal)
+  const profile = useGym((s) => s.profile)!
+  const history = useGym((s) => s.history)
+  const active = useGym((s) => s.active)
+  const startWorkout = useGym((s) => s.startWorkout)
+  const changeGoal = useGym((s) => s.changeGoal)
 
   const wc = weekCount(history, weekStart(today()))
   const st = streakWeeks(history, profile.target)

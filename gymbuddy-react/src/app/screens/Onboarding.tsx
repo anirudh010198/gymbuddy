@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { GOALS, EQUIP_OPTIONS } from '../../engine/goals'
 import type { Equip, GoalKey } from '../../engine/types'
-import { useGymStore } from '../../store/useGymStore'
+import { useGym } from '../../store/GymStoreContext'
 import { Wrap, Chip, PrimaryButton, Dock } from '../components/ui'
 
 const fadeSlide = {
@@ -13,7 +13,7 @@ const fadeSlide = {
 }
 
 export default function Onboarding() {
-  const completeOnboarding = useGymStore((s) => s.completeOnboarding)
+  const completeOnboarding = useGym((s) => s.completeOnboarding)
   const [step, setStep] = useState<0 | 1>(0)
   const [goal, setGoal] = useState<GoalKey | null>(null)
   const [equip, setEquip] = useState<Set<Equip>>(new Set(['machine', 'cable', 'dumbbell']))

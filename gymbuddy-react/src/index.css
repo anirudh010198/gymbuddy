@@ -94,3 +94,19 @@ a:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* Case study "Download as PDF" (window.print()): force plain light colours
+   regardless of the browser's dark-mode/print settings. */
+@media print {
+  :root {
+    --bg: #ffffff;
+    --card: #ffffff;
+    --text: #1e2b30;
+    --muted: #5b6b70;
+    --line: #d5dbd6;
+    --soft: #e3e8e3;
+  }
+  body {
+    background: #fff;
+  }
+}

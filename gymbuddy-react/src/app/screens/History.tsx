@@ -1,9 +1,9 @@
-import { useGymStore } from '../../store/useGymStore'
+import { useGym } from '../../store/GymStoreContext'
 import { BY_ID } from '../../engine/exercises'
 import { Wrap, Card, Tag } from '../components/ui'
 
 export default function History() {
-  const history = useGymStore((s) => s.history)
+  const history = useGym((s) => s.history)
   const reversed = [...history].reverse()
   const myTips = Array.from(new Set(history.flatMap((h) => h.tipsUnlocked ?? [])))
 
