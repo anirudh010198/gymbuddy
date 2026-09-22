@@ -4,22 +4,31 @@ import { useGymStore } from '../../store/useGymStore'
 import { BY_ID } from '../../engine/exercises'
 import { GROUP_LABEL } from '../../engine/templates'
 import { GOALS, SETS } from '../../engine/goals'
+import { findLastLog, formatLastTime } from '../../engine/progress'
 import type { Reason } from '../../engine/types'
 import { Wrap, Tag, PrimaryButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
 import Plate from '../components/Plate'
 import SwapSheet from '../components/SwapSheet'
 import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
+import RepWeightSheet from '../components/RepWeightSheet'
 import Toast from '../components/Toast'
 
 function reasonLabel(r: Reason) {
   return r === 'busy' ? 'equipment busy' : r === 'unsure' ? "wasn't sure how" : 'felt uncomfortable'
 }
 
+function formatSetLabel(reps: number, weight: number | null) {
+  const r = `${reps}`
+  return weight != null ? `${r} × ${weight % 1 === 0 ? weight : weight.toFixed(1)}kg` : `${r} reps`
+}
+
 export default function Workout() {
   const active = useGymStore((s) => s.active)!
   const profile = useGymStore((s) => s.profile)!
-  const toggleSet = useGymStore((s) => s.toggleSet)
+  const history = useGymStore((s) => s.history)
+  const logSet = useGymStore((s) => s.logSet)
+  const setSetValues = useGymStore((s) => s.setSetValues)
   const requestSwap = useGymStore((s) => s.requestSwap)
   const finishWorkout = useGymStore((s) => s.finishWorkout)
   const setPeekHome = useGymStore((s) => s.setPeekHome)
@@ -29,6 +38,7 @@ export default function Workout() {
   const [info, setInfo] = useState<SwapInfo | null>(null)
   const [banners, setBanners] = useState<Record<number, { from: string; reason: Reason }>>({})
   const [toast, setToast] = useState<string | null>(null)
+  const [editing, setEditing] = useState<{ itemIndex: number; setIndex: number } | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
 
   function showToast(msg: string) {
@@ -39,7 +49,7 @@ export default function Workout() {
 
   const g = GOALS[profile.goal]
   const total = active.items.length * SETS
-  const done = active.items.reduce((a, i) => a + i.done.filter(Boolean).length, 0)
+  const done = active.items.reduce((a, i) => a + i.sets.filter((s) => s.completedAt != null).length, 0)
 
   function handleReason(reason: Reason) {
     if (swapIndex === null) return
@@ -60,6 +70,9 @@ export default function Workout() {
   }
 
   const swapTarget = swapIndex !== null ? BY_ID[active.items[swapIndex].id] : null
+  const editingItem = editing ? active.items[editing.itemIndex] : null
+  const editingExercise = editingItem ? BY_ID[editingItem.id] : null
+  const editingSet = editing ? editingItem!.sets[editing.setIndex] : null
 
   return (
     <>
@@ -86,6 +99,10 @@ export default function Workout() {
           {active.items.map((it, ix) => {
             const e = BY_ID[it.id]
             const banner = banners[ix]
+            const lastLog = findLastLog(history, it.id)
+            const lastTimeText = lastLog
+              ? `Last time: ${formatLastTime(lastLog)}. Try to beat one set today.`
+              : "First time. Find a weight that feels hard on the last 2 reps."
             return (
               <motion.section
                 key={ix}
@@ -127,26 +144,46 @@ export default function Workout() {
                     Swapped in for {banner.from} ({reasonLabel(banner.reason)}).
                   </p>
                 )}
+                <p className="mt-2 text-sm font-semibold text-muted">{lastTimeText}</p>
                 <p className="mt-3">
                   <b>How:</b> {e.how}
                 </p>
                 <p className="mt-1 text-sm text-muted">
                   <b>Avoid:</b> {e.avoid} <b>Start:</b> {e.start}
                 </p>
-                <div className="mt-4 flex gap-3" role="group" aria-label="Log sets">
-                  {it.done.map((d, si) => (
-                    <Plate
-                      key={si}
-                      index={si}
-                      done={d}
-                      onToggle={() => {
-                        const turningOn = !it.done[si]
-                        toggleSet(ix, si)
-                        if (turningOn) showToast(`Set ${si + 1} logged. Rest ${g.rest}s.`)
-                      }}
-                    />
+                <div className="mt-4 flex gap-4" role="group" aria-label="Log sets">
+                  {it.sets.map((s, si) => (
+                    <div key={si} className="flex flex-col items-center gap-1.5">
+                      <Plate
+                        index={si}
+                        done={s.completedAt != null}
+                        onToggle={() => {
+                          const turningOn = s.completedAt == null
+                          logSet(ix, si)
+                          if (turningOn) showToast(`Set ${si + 1} logged. Rest ${g.rest}s.`)
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-muted underline decoration-line underline-offset-2"
+                        onClick={() => setEditing({ itemIndex: ix, setIndex: si })}
+                      >
+                        {formatSetLabel(s.reps, s.weight)}
+                      </button>
+                    </div>
                   ))}
                 </div>
+                {it.tipShown && profile.goal === 'muscle' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: reduce ? 0 : 8, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: 'auto' }}
+                    transition={{ duration: reduce ? 0 : 0.25 }}
+                    className="mt-4 overflow-hidden rounded-2xl border border-plate/40 bg-plate/10 p-3"
+                  >
+                    <div className="text-sm font-bold text-plate-ink">Bonus tip unlocked</div>
+                    <p className="mt-1 text-sm">{e.bonusTip}</p>
+                  </motion.div>
+                )}
               </motion.section>
             )
           })}
@@ -164,6 +201,14 @@ export default function Workout() {
         onClose={() => setSwapIndex(null)}
       />
       <InfoSheet info={info} onClose={() => setInfo(null)} />
+      <RepWeightSheet
+        open={editing !== null}
+        exercise={editingExercise}
+        reps={editingSet?.reps ?? 0}
+        weight={editingSet?.weight ?? null}
+        onChange={(patch) => editing && setSetValues(editing.itemIndex, editing.setIndex, patch)}
+        onClose={() => setEditing(null)}
+      />
     </>
   )
 }

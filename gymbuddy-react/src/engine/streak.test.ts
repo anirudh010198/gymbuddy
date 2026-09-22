@@ -6,7 +6,7 @@ import type { HistoryEntry } from './types'
 const TARGET = 3
 
 function mkEntry(date: string): HistoryEntry {
-  return { date, dayIndex: 0, sets: 9, items: [], mins: 20 }
+  return { date, dayIndex: 0, sets: 9, reps: 90, volume: 900, items: [], mins: 20 }
 }
 
 describe('streakWeeks', () => {

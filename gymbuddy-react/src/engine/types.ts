@@ -40,13 +40,34 @@ export interface ActiveWorkout {
   finished?: boolean
 }
 
+/**
+ * A single logged set. `reps` is nullable only to stay compatible with
+ * pre-Feature-2 history saved as `done: boolean[]` (an old `true` migrates
+ * to `reps: null`, meaning "we know a set happened, not how many reps").
+ */
+export interface SetEntry {
+  reps: number | null
+  weight: number | null
+  completedAt: number | null
+}
+
+export interface HistoryItemEntry {
+  id: string
+  log: SetEntry[]
+  swaps: Swap[]
+}
+
 export interface HistoryEntry {
   date: string
   dayIndex: number
   sets: number
-  items: { id: string; sets: number; swaps: Swap[] }[]
+  reps: number
+  volume: number
+  items: HistoryItemEntry[]
   mins: number
   feel?: string
+  /** Bonus-tip text unlocked this workout (Build-muscle goal only). */
+  tipsUnlocked?: string[]
 }
 
 export type GoalKey = 'fat' | 'muscle' | 'fit'
