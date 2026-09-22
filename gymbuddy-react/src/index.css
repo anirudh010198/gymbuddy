@@ -1,0 +1,96 @@
+@import '@fontsource/barlow/400.css';
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
+@import '@fontsource/barlow/700.css';
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
+@import '@fontsource/barlow-condensed/800.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GymBuddy design tokens — see CLAUDE.md section 3 */
+:root {
+  --rubber: #1e2b30;
+  --chalk: #eef1ec;
+  --paper: #ffffff;
+  --iron: #5b6b70;
+  --line: #d5dbd6;
+  --plate: #f2c230;
+  --plate-ink: #3a2e00;
+  --go: #2f8f5b;
+  --warn: #c2412d;
+  --soft: #e3e8e3;
+
+  --text: #1e2b30;
+  --muted: #5b6b70;
+  --bg: #eef1ec;
+  --card: #ffffff;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #152024;
+    --card: #1e2b30;
+    --text: #eef1ec;
+    --muted: #9fb0b4;
+    --line: #2e3e44;
+    --soft: #26363c;
+    --paper: #1e2b30;
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #152024;
+  --card: #1e2b30;
+  --text: #eef1ec;
+  --muted: #9fb0b4;
+  --line: #2e3e44;
+  --soft: #26363c;
+  --paper: #1e2b30;
+}
+
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--go);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
