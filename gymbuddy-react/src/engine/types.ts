@@ -16,6 +16,18 @@ export interface Exercise {
   avoid: string
   start: string
   bonusTip: string
+  /** One line on what it is and what it works — shown first in the form guide. */
+  description: string
+  /** How to position yourself and the equipment before the first rep. */
+  setup: string
+  /** 3 short numbered steps covering the full rep: start -> movement -> return. */
+  steps: [string, string, string]
+  /** One line, usually "in" on the lowering/reaching phase, "out" on the effort phase. */
+  breathing: string
+  /** Where the user should feel the work, so they can tell if they're doing it right. */
+  feelIt: string
+  /** 2 short "this is what good form looks like" cues, shown as checkmarks alongside `avoid`. */
+  formCues: [string, string]
 }
 
 export type Reason = 'busy' | 'unsure' | 'pain'

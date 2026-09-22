@@ -5,12 +5,14 @@ import { BY_ID } from '../../engine/exercises'
 import { GROUP_LABEL } from '../../engine/templates'
 import { GOALS, SETS } from '../../engine/goals'
 import { findLastLog, formatLastTime, isPB } from '../../engine/progress'
-import type { Group, Reason } from '../../engine/types'
+import type { Exercise, Group, Reason } from '../../engine/types'
 import { Wrap, Tag, PrimaryButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
 import Plate from '../components/Plate'
 import MuscleMap from '../components/MuscleMap'
 import SwapSheet from '../components/SwapSheet'
+import ChangeExerciseSheet from '../components/ChangeExerciseSheet'
+import FormGuide from '../components/FormGuide'
 import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
 import RepWeightSheet from '../components/RepWeightSheet'
 import AskCoachSheet from '../components/AskCoachSheet'
@@ -32,12 +34,14 @@ export default function Workout() {
   const history = useGym((s) => s.history)
   const logSet = useGym((s) => s.logSet)
   const setSetValues = useGym((s) => s.setSetValues)
-  const requestSwap = useGym((s) => s.requestSwap)
+  const previewSwap = useGym((s) => s.previewSwap)
+  const applySwap = useGym((s) => s.applySwap)
   const finishWorkout = useGym((s) => s.finishWorkout)
   const setPeekHome = useGym((s) => s.setPeekHome)
   const reduce = useReducedMotion()
 
   const [swapIndex, setSwapIndex] = useState<number | null>(null)
+  const [changeExercise, setChangeExercise] = useState<{ itemIndex: number; reason: Reason; candidates: Exercise[] } | null>(null)
   const [info, setInfo] = useState<SwapInfo | null>(null)
   const [banners, setBanners] = useState<Record<number, { from: string; reason: Reason }>>({})
   const [toast, setToast] = useState<string | null>(null)
@@ -45,6 +49,7 @@ export default function Workout() {
   const [pbDone, setPbDone] = useState<Set<number>>(new Set())
   const [pulse, setPulse] = useState<{ itemIndex: number; setIndex: number } | null>(null)
   const [askIndex, setAskIndex] = useState<number | null>(null)
+  const [guideOpen, setGuideOpen] = useState<Set<number>>(new Set())
   const aiAvailable = useAiAvailable()
   const toastTimer = useRef<number | undefined>(undefined)
   const pulseTimer = useRef<number | undefined>(undefined)
@@ -79,19 +84,37 @@ export default function Workout() {
   function handleReason(reason: Reason) {
     if (swapIndex === null) return
     const ix = swapIndex
-    const cur = BY_ID[active.items[ix].id]
     setSwapIndex(null)
-    const outcome = requestSwap(ix, reason)
-    if (!outcome.ok) {
+    const candidates = previewSwap(ix, reason)
+    if (!candidates.length) {
       setInfo({ type: 'exhausted' })
       return
     }
-    setBanners((b) => ({ ...b, [ix]: { from: cur.name, reason } }))
+    setChangeExercise({ itemIndex: ix, reason, candidates })
+  }
+
+  function handlePick(exercise: Exercise) {
+    if (!changeExercise) return
+    const { itemIndex, reason } = changeExercise
+    const cur = BY_ID[active.items[itemIndex].id]
+    const outcome = applySwap(itemIndex, exercise.id, reason)
+    setChangeExercise(null)
+    if (!outcome.ok) return
+    setBanners((b) => ({ ...b, [itemIndex]: { from: cur.name, reason } }))
     if (reason === 'pain') {
       setInfo({ type: 'safety', exerciseName: outcome.exercise.name })
     } else {
       showToast(`Swapped in ${outcome.exercise.name}`)
     }
+  }
+
+  function toggleGuide(ix: number) {
+    setGuideOpen((prev) => {
+      const next = new Set(prev)
+      if (next.has(ix)) next.delete(ix)
+      else next.add(ix)
+      return next
+    })
   }
 
   const swapTarget = swapIndex !== null ? BY_ID[active.items[swapIndex].id] : null
@@ -189,6 +212,19 @@ export default function Workout() {
                 <p className="mt-1 text-sm text-muted">
                   <b>Avoid:</b> {e.avoid} <b>Start:</b> {e.start}
                 </p>
+                <button
+                  type="button"
+                  className="mt-2 text-sm font-semibold underline decoration-line underline-offset-2"
+                  onClick={() => toggleGuide(ix)}
+                  aria-expanded={guideOpen.has(ix)}
+                >
+                  {guideOpen.has(ix) ? 'Hide form guide' : 'Full form guide'}
+                </button>
+                {guideOpen.has(ix) && (
+                  <div className="mt-3 rounded-2xl bg-soft p-3">
+                    <FormGuide exercise={e} />
+                  </div>
+                )}
                 {aiAvailable && (
                   <button
                     type="button"
@@ -287,6 +323,12 @@ export default function Workout() {
         exercise={askIndex !== null ? BY_ID[active.items[askIndex].id] : null}
         goal={profile.goal}
         onClose={() => setAskIndex(null)}
+      />
+      <ChangeExerciseSheet
+        open={changeExercise !== null}
+        candidates={changeExercise?.candidates ?? []}
+        onPick={handlePick}
+        onClose={() => setChangeExercise(null)}
       />
     </>
   )

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { completeOnboarding, finishWorkout } from './helpers'
+import { completeOnboarding, finishWorkout, pickFirstCandidate } from './helpers'
 
 test('onboarding -> busy swap -> pain swap (safety sheet) -> log all sets -> finish -> summary shows 1/target', async ({ page }) => {
   await completeOnboarding(page)
@@ -8,14 +8,18 @@ test('onboarding -> busy swap -> pain swap (safety sheet) -> log all sets -> fin
   const cards = page.locator('section[aria-label]')
   await expect(cards).toHaveCount(3)
 
-  // Busy swap on the first card.
+  // Busy swap on the first card: pick a reason, then choose a replacement from the list.
   await cards.nth(0).getByRole('button', { name: 'Swap' }).click()
   await page.getByRole('button', { name: /It's busy or not here/ }).click()
+  await expect(page.getByRole('heading', { name: 'Change exercise' })).toBeVisible()
+  await pickFirstCandidate(page)
   await expect(cards.nth(0).getByText(/Swapped in for/)).toBeVisible()
 
-  // Pain swap on the second card must always show the safety sheet first.
+  // Pain swap on the second card must always show the safety sheet after picking a replacement.
   await cards.nth(1).getByRole('button', { name: 'Swap' }).click()
   await page.getByRole('button', { name: /It hurts or feels wrong/ }).click()
+  await expect(page.getByRole('heading', { name: 'Change exercise' })).toBeVisible()
+  await pickFirstCandidate(page)
   await expect(page.getByText(/Sharp pain, joint pain, or pain that doesn't fade/)).toBeVisible()
   await page.getByRole('button', { name: 'Got it' }).click()
   await expect(cards.nth(1).getByText(/Swapped in for/)).toBeVisible()

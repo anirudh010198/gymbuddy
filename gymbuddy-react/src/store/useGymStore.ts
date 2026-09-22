@@ -3,7 +3,7 @@ import { persist, type PersistStorage, type StorageValue } from 'zustand/middlew
 import { BY_ID } from '../engine/exercises'
 import { SETS } from '../engine/goals'
 import { today } from '../engine/dates'
-import { buildWorkout, swapCandidate } from '../engine/swap'
+import { buildWorkout, swapCandidates } from '../engine/swap'
 import { appendEvent } from '../engine/track'
 import { defaultSetsFor, goalTargetReps, totalReps, totalVolume, type SetState } from '../engine/progress'
 import type { Equip, Exercise, GoalKey, HistoryEntry, Pattern, Profile, Reason, Swap, TrackEvent } from '../engine/types'
@@ -48,7 +48,10 @@ export interface GymState {
   startWorkout: () => void
   logSet: (itemIndex: number, setIndex: number) => void
   setSetValues: (itemIndex: number, setIndex: number, patch: { reps?: number; weight?: number | null }) => void
-  requestSwap: (itemIndex: number, reason: Reason) => SwapOutcome
+  /** Ranked candidates for the "Change exercise" list — pure, no mutation, but
+   *  logs swap_opened. Returns [] when there's genuinely nothing left to swap to. */
+  previewSwap: (itemIndex: number, reason: Reason) => Exercise[]
+  applySwap: (itemIndex: number, exerciseId: string, reason: Reason) => SwapOutcome
   finishWorkout: () => void
   setFeel: (feel: string) => void
   dismissSummary: () => void
@@ -269,17 +272,23 @@ export function createGymStore(storageKey: string): UseBoundStore<StoreApi<GymSt
           set({ active: { ...active, items } })
         },
 
-        requestSwap: (itemIndex, reason) => {
+        previewSwap: (itemIndex, reason) => {
+          const active = get().active
+          const profile = get().profile
+          if (!active || !profile) return []
+          const item = active.items[itemIndex]
+          get().trackEvent('swap_opened', { ex: item.id })
+          const candidates = swapCandidates(item, reason, profile.equip)
+          if (!candidates.length) get().trackEvent('swap_exhausted', { ex: item.id })
+          return candidates
+        },
+
+        applySwap: (itemIndex, exerciseId, reason) => {
           const active = get().active
           const profile = get().profile
           if (!active || !profile) return { ok: false }
-          const item = active.items[itemIndex]
-          get().trackEvent('swap_opened', { ex: item.id })
-          const next = swapCandidate(item, reason, profile.equip)
-          if (!next) {
-            get().trackEvent('swap_exhausted', { ex: item.id })
-            return { ok: false }
-          }
+          const next = BY_ID[exerciseId]
+          if (!next) return { ok: false }
           const items = active.items.map((it, i) =>
             i === itemIndex
               ? {

@@ -35,13 +35,32 @@ export function buildWorkout(dayIndex: number, equip: Equip[]): ActiveWorkout {
   return { date: today(), dayIndex, items, startedAt: Date.now() }
 }
 
+function reasonScore(e: Exercise, cur: Exercise, reason: Reason): number {
+  let s = 0
+  if (reason === 'busy') {
+    if (e.equip !== cur.equip) s -= 10
+    if (e.equip === 'bodyweight' || e.equip === 'dumbbell') s -= 3
+  }
+  if (reason === 'unsure') {
+    s += e.level * 10
+    if (e.equip === 'machine') s -= 4
+  }
+  if (reason === 'pain') {
+    s += e.level * 10
+    if (e.equip === 'bodyweight') s -= 6
+  }
+  return s
+}
+
 /**
  * Swap engine: deterministic, instant, works offline. Pool tiers narrow from
  * same pattern → same group → group's bodyweight fallback, always excluding
  * exercises already tried on this item. Reason changes the ranking within
- * whichever tier has candidates.
+ * whichever tier has candidates. Returns the full ranked pool, best first —
+ * the "Change exercise" list shows all of them; `swapCandidate` (singular)
+ * just takes the top one for callers that don't need the whole list.
  */
-export function swapCandidate(item: WorkoutItem, reason: Reason, equip: Equip[]): Exercise | null {
+export function swapCandidates(item: WorkoutItem, reason: Reason, equip: Equip[]): Exercise[] {
   const cur = BY_ID[item.id]
   const tried = new Set([item.id, ...item.swaps.map((s) => s.from)])
   const avail = availableExercises(equip)
@@ -52,24 +71,14 @@ export function swapCandidate(item: WorkoutItem, reason: Reason, equip: Equip[])
     avail.filter((e) => e.group === cur.group && e.equip === 'bodyweight' && !tried.has(e.id)),
   ]
   const pool = tiers.find((t) => t.length) ?? []
-  if (!pool.length) return null
+  if (!pool.length) return []
 
-  const score = (e: Exercise) => {
-    let s = 0
-    if (reason === 'busy') {
-      if (e.equip !== cur.equip) s -= 10
-      if (e.equip === 'bodyweight' || e.equip === 'dumbbell') s -= 3
-    }
-    if (reason === 'unsure') {
-      s += e.level * 10
-      if (e.equip === 'machine') s -= 4
-    }
-    if (reason === 'pain') {
-      s += e.level * 10
-      if (e.equip === 'bodyweight') s -= 6
-    }
-    return s
-  }
+  return pool
+    .map((e, i) => ({ e, s: reasonScore(e, cur, reason) + i * 0.01 }))
+    .sort((a, b) => a.s - b.s)
+    .map((x) => x.e)
+}
 
-  return pool.map((e, i) => ({ e, s: score(e) + i * 0.01 })).sort((a, b) => a.s - b.s)[0].e
+export function swapCandidate(item: WorkoutItem, reason: Reason, equip: Equip[]): Exercise | null {
+  return swapCandidates(item, reason, equip)[0] ?? null
 }

@@ -56,3 +56,11 @@ export async function finishWorkout(page: Page) {
   await logAllSets(page)
   await page.getByRole('button', { name: 'Finish workout' }).click()
 }
+
+/** In the open "Change exercise" sheet, expands the first candidate row and
+ *  taps "Use this exercise". */
+export async function pickFirstCandidate(page: Page) {
+  const sheet = page.getByRole('dialog').filter({ hasText: 'Change exercise' })
+  await sheet.getByRole('button', { expanded: false }).first().click()
+  await sheet.getByRole('button', { name: 'Use this exercise' }).click()
+}
