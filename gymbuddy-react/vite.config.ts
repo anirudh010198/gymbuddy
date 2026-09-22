@@ -13,7 +13,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // Full offline caching + real icon set land in the PWA step (CLAUDE.md prompt 5).
+      includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'GymBuddy',
         short_name: 'GymBuddy',
@@ -22,7 +22,17 @@ export default defineConfig({
         background_color: '#1E2B30',
         display: 'standalone',
         start_url: '/app',
-        icons: [],
+        icons: [
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icons/icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
+      },
+      workbox: {
+        // Default globPatterns misses fonts and icons — the core loop needs
+        // everything (including the self-hosted fonts) available offline.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
       },
     }),
   ],

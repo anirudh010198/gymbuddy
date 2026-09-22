@@ -5,6 +5,7 @@ import { today, weekStart } from '../../engine/dates'
 import { Wrap, Card, PrimaryButton, GhostButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
 import WeekDots from '../components/WeekDots'
+import InstallHint from '../components/InstallHint'
 
 export default function Home() {
   const profile = useGym((s) => s.profile)!
@@ -71,6 +72,7 @@ export default function Home() {
           <p className="mt-1 text-muted">3 exercises, about 25 minutes. {GOALS[profile.goal].label}.</p>
         </Card>
       )}
+      <InstallHint eligible={history.length > 0} />
       <p className="mt-6 text-sm text-muted">Your progress is saved on this phone only.</p>
       {!done && (
         <Dock raised>
