@@ -4,11 +4,12 @@ import { useGymStore } from '../../store/useGymStore'
 import { BY_ID } from '../../engine/exercises'
 import { GROUP_LABEL } from '../../engine/templates'
 import { GOALS, SETS } from '../../engine/goals'
-import { findLastLog, formatLastTime } from '../../engine/progress'
-import type { Reason } from '../../engine/types'
+import { findLastLog, formatLastTime, isPB } from '../../engine/progress'
+import type { Group, Reason } from '../../engine/types'
 import { Wrap, Tag, PrimaryButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
 import Plate from '../components/Plate'
+import MuscleMap from '../components/MuscleMap'
 import SwapSheet from '../components/SwapSheet'
 import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
 import RepWeightSheet from '../components/RepWeightSheet'
@@ -39,7 +40,11 @@ export default function Workout() {
   const [banners, setBanners] = useState<Record<number, { from: string; reason: Reason }>>({})
   const [toast, setToast] = useState<string | null>(null)
   const [editing, setEditing] = useState<{ itemIndex: number; setIndex: number } | null>(null)
+  const [pbDone, setPbDone] = useState<Set<number>>(new Set())
+  const [pulse, setPulse] = useState<{ itemIndex: number; setIndex: number } | null>(null)
   const toastTimer = useRef<number | undefined>(undefined)
+  const pulseTimer = useRef<number | undefined>(undefined)
+  const cardRefs = useRef<(HTMLElement | null)[]>([])
 
   function showToast(msg: string) {
     setToast(msg)
@@ -50,6 +55,22 @@ export default function Workout() {
   const g = GOALS[profile.goal]
   const total = active.items.length * SETS
   const done = active.items.reduce((a, i) => a + i.sets.filter((s) => s.completedAt != null).length, 0)
+
+  function indexForGroup(group: Group) {
+    return active.items.findIndex((it) => BY_ID[it.id].group === group)
+  }
+
+  function progressForGroup(group: Group) {
+    const ix = indexForGroup(group)
+    if (ix === -1) return 0
+    const item = active.items[ix]
+    return item.sets.filter((s) => s.completedAt != null).length / item.sets.length
+  }
+
+  function scrollToGroup(group: Group) {
+    const ix = indexForGroup(group)
+    cardRefs.current[ix]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+  }
 
   function handleReason(reason: Reason) {
     if (swapIndex === null) return
@@ -95,6 +116,14 @@ export default function Workout() {
         <div className="mt-3">
           <ProgressBar pct={(done / total) * 100} />
         </div>
+        <div className="mt-4">
+          <MuscleMap
+            legsProgress={progressForGroup('legs')}
+            pushProgress={progressForGroup('push')}
+            pullProgress={progressForGroup('pull')}
+            onTap={scrollToGroup}
+          />
+        </div>
         <div className="mt-5 grid gap-4">
           {active.items.map((it, ix) => {
             const e = BY_ID[it.id]
@@ -106,6 +135,9 @@ export default function Workout() {
             return (
               <motion.section
                 key={ix}
+                ref={(el: HTMLElement | null) => {
+                  cardRefs.current[ix] = el
+                }}
                 layout
                 transition={{ duration: reduce ? 0 : 0.25, ease: 'easeInOut' }}
                 aria-label={e.name}
@@ -154,15 +186,41 @@ export default function Workout() {
                 <div className="mt-4 flex gap-4" role="group" aria-label="Log sets">
                   {it.sets.map((s, si) => (
                     <div key={si} className="flex flex-col items-center gap-1.5">
-                      <Plate
-                        index={si}
-                        done={s.completedAt != null}
-                        onToggle={() => {
-                          const turningOn = s.completedAt == null
-                          logSet(ix, si)
-                          if (turningOn) showToast(`Set ${si + 1} logged. Rest ${g.rest}s.`)
-                        }}
-                      />
+                      <div className="relative">
+                        <Plate
+                          index={si}
+                          done={s.completedAt != null}
+                          onToggle={() => {
+                            const turningOn = s.completedAt == null
+                            if (turningOn) {
+                              const wouldBePB = isPB(history, it.id, { ...s, completedAt: Date.now() })
+                              if (wouldBePB && !pbDone.has(ix)) {
+                                setPbDone((prev) => new Set(prev).add(ix))
+                                setPulse({ itemIndex: ix, setIndex: si })
+                                window.clearTimeout(pulseTimer.current)
+                                pulseTimer.current = window.setTimeout(() => setPulse(null), 650)
+                                showToast('New best!')
+                              } else {
+                                showToast(`Set ${si + 1} logged. Rest ${g.rest}s.`)
+                              }
+                            }
+                            logSet(ix, si)
+                          }}
+                        />
+                        <AnimatePresence>
+                          {!reduce && pulse?.itemIndex === ix && pulse?.setIndex === si && (
+                            <motion.span
+                              aria-hidden="true"
+                              className="pointer-events-none absolute inset-0 rounded-full"
+                              style={{ boxShadow: '0 0 0 4px var(--plate)' }}
+                              initial={{ opacity: 0.9, scale: 1 }}
+                              animate={{ opacity: 0, scale: 1.5 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.6 }}
+                            />
+                          )}
+                        </AnimatePresence>
+                      </div>
                       <button
                         type="button"
                         className="text-xs font-semibold text-muted underline decoration-line underline-offset-2"

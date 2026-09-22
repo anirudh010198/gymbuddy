@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useGymStore } from '../../store/useGymStore'
 import { streakWeeks, weekCount } from '../../engine/streak'
 import { today, weekStart } from '../../engine/dates'
 import { BY_ID } from '../../engine/exercises'
-import { GROUP_LABEL } from '../../engine/templates'
+import { GROUP_LABEL, TEMPLATES } from '../../engine/templates'
+import { pickForPattern } from '../../engine/swap'
 import { compareToLast, exerciseHasPB, findLastLog, totalReps } from '../../engine/progress'
-import { Wrap, Card, Chip, PrimaryButton, Dock } from '../components/ui'
+import { Wrap, Card, Chip, PrimaryButton, GhostButton, Dock } from '../components/ui'
 import WeekDots from '../components/WeekDots'
+import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
+import { buildShareImage } from '../lib/shareCard'
 
 const FEELS = ['Too easy', 'About right', 'Too hard'] as const
 
@@ -16,6 +19,13 @@ export default function Summary() {
   const setFeel = useGymStore((s) => s.setFeel)
   const dismissSummary = useGymStore((s) => s.dismissSummary)
   const [tipsOpen, setTipsOpen] = useState(false)
+  const [preview, setPreview] = useState<SwapInfo | null>(null)
+  const [canShare, setCanShare] = useState(false)
+  const [sharing, setSharing] = useState(false)
+
+  useEffect(() => {
+    setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function')
+  }, [])
 
   const last = history[history.length - 1]
   const priorHistory = history.slice(0, -1)
@@ -27,6 +37,28 @@ export default function Summary() {
 
   const msg = wc >= target ? "Weekly target hit. That's the whole game in month one." : `${target - wc} more this week to keep your streak.`
   const tips = last.tipsUnlocked ?? []
+
+  // history.length already includes the workout just finished, so it's also
+  // the dayIndex the *next* workout will build with (best-effort preview —
+  // actual picks may shift if equipment changes before then).
+  const nextDayIndex = history.length
+  const nextTemplate = TEMPLATES[nextDayIndex % 2]
+  const nextExercises = nextTemplate.map((p) => pickForPattern(p, profile.equip))
+
+  async function handleShare() {
+    setSharing(true)
+    try {
+      const blob = await buildShareImage({ workoutNumber: history.length, reps: last.reps, volume: last.volume, streak: st })
+      if (!blob) return
+      const file = new File([blob], 'gymbuddy-workout.png', { type: 'image/png' })
+      if (navigator.canShare && !navigator.canShare({ files: [file] })) return
+      await navigator.share({ files: [file], title: 'GymBuddy' })
+    } catch {
+      /* share sheet dismissed or unavailable mid-flow — not an error */
+    } finally {
+      setSharing(false)
+    }
+  }
 
   return (
     <Wrap>
@@ -112,6 +144,28 @@ export default function Summary() {
         </Card>
       )}
 
+      <Card className="mt-4 p-4">
+        <div className="text-sm font-semibold text-muted">
+          Next time: Workout {nextDayIndex % 2 ? 'B' : 'A'}
+        </div>
+        <p className="mt-1">
+          {nextExercises.map((ex, i) => (
+            <span key={ex.id}>
+              <button type="button" className="font-semibold underline decoration-line underline-offset-2" onClick={() => setPreview({ type: 'preview', exercise: ex })}>
+                {ex.name}
+              </button>
+              {i < nextExercises.length - 1 ? ', ' : '.'}
+            </span>
+          ))}
+        </p>
+      </Card>
+
+      {canShare && (
+        <GhostButton className="mt-4" onClick={handleShare} disabled={sharing}>
+          {sharing ? 'Preparing…' : 'Share my workout'}
+        </GhostButton>
+      )}
+
       <p className="mt-4 font-semibold">
         {wc}/{target} this week · {st} week streak
       </p>
@@ -143,6 +197,7 @@ export default function Summary() {
       <Dock>
         <PrimaryButton onClick={dismissSummary}>Done</PrimaryButton>
       </Dock>
+      <InfoSheet info={preview} onClose={() => setPreview(null)} />
     </Wrap>
   )
 }
