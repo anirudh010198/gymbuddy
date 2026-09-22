@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import SiteHeader from '../site/components/SiteHeader'
@@ -7,7 +7,11 @@ import PhoneFrame from '../site/components/PhoneFrame'
 import PlateLogo from '../site/components/PlateLogo'
 import SwapDemo from '../site/components/SwapDemo'
 import { research } from '../site/lib/research'
-import { createGymStore } from '../store/useGymStore'
+import { EXERCISES } from '../engine/exercises'
+import { GOALS } from '../engine/goals'
+import { GROUP_LABEL } from '../engine/templates'
+import type { Group } from '../engine/types'
+import { createGymStore, createMemoryStorage } from '../store/useGymStore'
 import { GymStoreProvider } from '../store/GymStoreContext'
 import AppRoot from '../app/AppRoot'
 
@@ -17,6 +21,12 @@ import AppRoot from '../app/AppRoot'
 const HERO_IMAGE_URL = ''
 
 const HEADLINE_LINES = ['Walk in.', 'Know exactly', 'what to do.']
+
+// The core 24-exercise library (FEATURES.md Feature 1) — excludes the 7
+// ported bodyweight fallbacks, which only ever surface as swaps for
+// visitors with no equipment, not as part of the headline "what you get".
+const CORE_EXERCISES = EXERCISES.filter((e) => e.equip !== 'bodyweight')
+const GROUPS: Group[] = ['legs', 'push', 'pull']
 
 const HOW_IT_WORKS = [
   { n: 1, title: 'Pick a goal', body: 'Lose fat, build muscle, or get generally fit — plus the equipment your gym actually has.' },
@@ -39,9 +49,11 @@ function InsightCard({ title, evidence, implication }: { title: string; evidence
 
 export default function Landing() {
   const reduce = useReducedMotion()
-  // Isolated store instance under its own storage key — the phone-frame demo
-  // can never read or write a visitor's real /app progress.
-  const demoStore = useMemo(() => createGymStore('gymbuddy.demo'), [])
+  // In-memory only (never localStorage) and created fresh via useState's lazy
+  // initializer, which — unlike useMemo — is a real per-mount guarantee, not
+  // just a caching hint: every time this page mounts, the demo starts over at
+  // onboarding, never resuming a visitor's (or a previous visitor's) progress.
+  const [demoStore] = useState(() => createGymStore('gymbuddy.demo', createMemoryStorage()))
 
   const interviewCount = research.interviews.length
   const funnel = research.funnel
@@ -103,6 +115,44 @@ export default function Landing() {
             </GymStoreProvider>
           </div>
         </div>
+      </section>
+
+      {/* WHAT'S INSIDE */}
+      <section className="mx-auto max-w-[1100px] px-4 py-16 sm:px-6">
+        <h2 className="font-display font-extrabold" style={{ fontSize: '2rem' }}>
+          What's inside
+        </h2>
+        <p className="mt-2 max-w-2xl text-muted">
+          Three goals to choose from, and the {CORE_EXERCISES.length}-exercise library GymBuddy picks and swaps from — see it
+          all before you open the app.
+        </p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          {(Object.entries(GOALS) as [string, (typeof GOALS)[keyof typeof GOALS]][]).map(([k, g]) => (
+            <div key={k} className="rounded-card border border-line bg-card p-4">
+              <div className="font-display font-bold" style={{ fontSize: '1.2rem' }}>
+                {g.label}
+              </div>
+              <div className="text-sm text-muted">{g.sub}</div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-8 grid gap-6 sm:grid-cols-3">
+          {GROUPS.map((group) => (
+            <div key={group}>
+              <div className="text-xs font-bold uppercase tracking-wide text-muted">{GROUP_LABEL[group]}</div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {CORE_EXERCISES.filter((e) => e.group === group).map((e) => (
+                  <span key={e.id} className="rounded-full bg-soft px-3 py-1 text-sm">
+                    {e.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <Link to="/exercises" className="mt-6 inline-block font-semibold underline decoration-line underline-offset-2">
+          See the full exercise library →
+        </Link>
       </section>
 
       {/* PROBLEM */}

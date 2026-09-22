@@ -9,6 +9,9 @@ export default function SiteHeader() {
         <span className="font-display text-xl font-extrabold">GymBuddy</span>
       </Link>
       <nav className="flex items-center gap-4">
+        <Link to="/exercises" className="text-sm font-semibold text-muted hover:text-ink">
+          Exercises
+        </Link>
         <Link to="/case-study" className="text-sm font-semibold text-muted hover:text-ink">
           Case study
         </Link>

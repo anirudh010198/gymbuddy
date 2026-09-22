@@ -186,9 +186,31 @@ function createStorage(key: string): PersistStorage<Partial<GymState>> {
   }
 }
 
+/** Backs zustand's persist API with a plain in-memory variable instead of
+ *  localStorage — nothing ever survives a reload or a fresh mount. Used for
+ *  the landing page's phone-frame demo, which must always start fresh at
+ *  onboarding, never resume a visitor's (or a previous visitor's) progress. */
+export function createMemoryStorage(): PersistStorage<Partial<GymState>> {
+  let value: StorageValue<Partial<GymState>> | null = null
+  return {
+    getItem: () => value,
+    setItem: (_key, v) => {
+      value = v
+    },
+    removeItem: () => {
+      value = null
+    },
+  }
+}
+
 /** Factory so the landing-page demo can mount an isolated instance under
- *  "gymbuddy.demo" without ever touching the visitor's real progress. */
-export function createGymStore(storageKey: string): UseBoundStore<StoreApi<GymState>> {
+ *  "gymbuddy.demo" without ever touching the visitor's real progress.
+ *  `storage` defaults to localStorage (the real /app); pass
+ *  `createMemoryStorage()` for a store that never persists at all. */
+export function createGymStore(
+  storageKey: string,
+  storage: PersistStorage<Partial<GymState>> = createStorage(storageKey),
+): UseBoundStore<StoreApi<GymState>> {
   return create<GymState>()(
     persist(
       (set, get) => ({
@@ -346,7 +368,7 @@ export function createGymStore(storageKey: string): UseBoundStore<StoreApi<GymSt
       }),
       {
         name: storageKey,
-        storage: createStorage(storageKey),
+        storage,
         version: 1,
         // peekHome is transient UI state (mid-workout "Home" peek) — never persisted,
         // so it can't get stuck true across a reload while a workout is still active.

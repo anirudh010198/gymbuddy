@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useGym } from '../../store/GymStoreContext'
 import { EQUIP_OPTIONS, GOALS } from '../../engine/goals'
 import type { Equip, GoalKey } from '../../engine/types'
@@ -71,6 +72,16 @@ export default function Settings() {
           </Chip>
         ))}
       </div>
+
+      <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
+        Reference
+      </h2>
+      <Card className="p-4">
+        <Link to="/exercises" className="font-semibold underline decoration-line underline-offset-2">
+          Browse all exercises →
+        </Link>
+        <p className="mt-1 text-sm text-muted">Search and filter the full library, with the same form guide shown mid-workout.</p>
+      </Card>
 
       <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
         Your data
