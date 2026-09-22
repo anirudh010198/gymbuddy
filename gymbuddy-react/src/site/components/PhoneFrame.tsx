@@ -10,7 +10,12 @@ export default function PhoneFrame({ children, width = 260, height = 560 }: { ch
   return (
     <div
       className="relative overflow-hidden rounded-[2.2rem] border-[10px] border-rubber bg-bg shadow-2xl"
-      style={{ width, height }}
+      // transform (any non-none value, even a no-op translateZ(0)) makes this box
+      // the containing block for position:fixed descendants. Without it, the
+      // real app's Dock/Toast/Sheet (all position:fixed) skip straight past this
+      // frame and anchor to the real page viewport instead — the frame's own
+      // overflow-hidden then clips them to its rounded-rect bounds too.
+      style={{ width, height, transform: 'translateZ(0)' }}
     >
       <div className="absolute left-1/2 top-2 z-10 h-1.5 w-16 -translate-x-1/2 rounded-full bg-rubber/50" aria-hidden="true" />
       <div className="h-full w-full overflow-y-auto">
