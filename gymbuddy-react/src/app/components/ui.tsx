@@ -1,7 +1,8 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { NAV_HEIGHT } from './layout'
 
 export function Wrap({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  return <div className={`mx-auto px-4 pb-32 pt-2 ${wide ? 'max-w-[1040px]' : 'max-w-[480px]'}`}>{children}</div>
+  return <div className={`mx-auto px-4 pb-40 pt-2 ${wide ? 'max-w-[1040px]' : 'max-w-[480px]'}`}>{children}</div>
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -47,9 +48,14 @@ export function GhostButton({ className = '', ...props }: ButtonHTMLAttributes<H
   )
 }
 
-export function Dock({ children }: { children: ReactNode }) {
+/** `raised`: sits just above the bottom tab nav instead of at the true viewport
+ *  bottom, for screens (like Home) that show both at once. */
+export function Dock({ children, raised = false }: { children: ReactNode; raised?: boolean }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-bg from-70% to-transparent p-4 pb-[calc(12px+env(safe-area-inset-bottom,0px))]">
+    <div
+      className="fixed inset-x-0 z-30 bg-gradient-to-t from-bg from-70% to-transparent p-4"
+      style={raised ? { bottom: NAV_HEIGHT } : { bottom: 0, paddingBottom: 'calc(12px + env(safe-area-inset-bottom,0px))' }}
+    >
       <div className="mx-auto max-w-[480px]">{children}</div>
     </div>
   )

@@ -3,9 +3,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useGymStore } from '../store/useGymStore'
 import { today } from '../engine/dates'
 import Onboarding from './screens/Onboarding'
-import Home from './screens/Home'
 import Workout from './screens/Workout'
 import Summary from './screens/Summary'
+import TabsShell from './TabsShell'
 
 type ScreenName = 'onboarding' | 'workout' | 'summary' | 'home'
 
@@ -27,7 +27,7 @@ const SCREENS: Record<ScreenName, ComponentType> = {
   onboarding: Onboarding,
   workout: Workout,
   summary: Summary,
-  home: Home,
+  home: TabsShell,
 }
 
 export default function AppRoot() {

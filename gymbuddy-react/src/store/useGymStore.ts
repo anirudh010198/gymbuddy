@@ -42,6 +42,8 @@ export interface GymState {
 
   completeOnboarding: (goal: GoalKey, equip: Equip[], target: number) => void
   changeGoal: () => void
+  updateProfile: (patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target'>>) => void
+  resetData: () => void
   setPeekHome: (v: boolean) => void
   startWorkout: () => void
   logSet: (itemIndex: number, setIndex: number) => void
@@ -207,6 +209,11 @@ export function createGymStore(storageKey: string): UseBoundStore<StoreApi<GymSt
         },
 
         changeGoal: () => set({ profile: null, active: null }),
+
+        updateProfile: (patch) => set((s) => (s.profile ? { profile: { ...s.profile, ...patch } } : s)),
+
+        resetData: () =>
+          set({ profile: null, history: [], active: null, events: [], lastDone: null, showSummary: false, peekHome: false }),
 
         startWorkout: () => {
           const profile = get().profile

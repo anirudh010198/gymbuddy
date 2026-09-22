@@ -73,7 +73,7 @@ export default function Home() {
       )}
       <p className="mt-6 text-sm text-muted">Your progress is saved on this phone only.</p>
       {!done && (
-        <Dock>
+        <Dock raised>
           <PrimaryButton onClick={startWorkout}>{resumable ? "Resume today's workout" : "Start today's workout"}</PrimaryButton>
         </Dock>
       )}
