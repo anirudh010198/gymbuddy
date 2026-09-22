@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GymBuddy — Master Your Workout</title>
+<meta name="description" content="GymBuddy: AI-generated 3-exercise workouts, instant machine swaps, and one-tap set tracking for beginner gym-goers.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"Barlow Condensed"', 'sans-serif'],
+          body: ['"Barlow"', 'sans-serif'],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  html { scroll-behavior: smooth; }
+  body { background: #0f172a; font-family: 'Barlow', sans-serif; }
+  h1, h2, h3, .font-display { font-family: 'Barlow Condensed', sans-serif; }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0f172a; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
+
+  .glass {
+    background: rgba(30, 41, 59, 0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(248, 250, 252, 0.08);
+  }
+
+  .gradient-border {
+    background: linear-gradient(135deg, rgba(16,185,129,0.55), rgba(51,65,85,0.4) 40%, rgba(245,158,11,0.35));
+    padding: 1px;
+    border-radius: 1rem;
+  }
+
+  .hero-scrim {
+    background: linear-gradient(180deg, rgba(15,23,42,0.55) 0%, rgba(15,23,42,0.85) 55%, #0f172a 100%);
+  }
+
+  .set-dot {
+    transition: all 0.2s ease;
+  }
+  .set-dot.done {
+    background-color: #10b981;
+    border-color: #10b981;
+    color: #f8fafc;
+    transform: scale(1.05);
+  }
+
+  .chip { transition: all 0.15s ease; }
+  .chip.active-chip {
+    background-color: rgba(16,185,129,0.15);
+    border-color: #10b981;
+    color: #f8fafc;
+  }
+
+  .goal-btn.active-goal {
+    background-color: rgba(16,185,129,0.15);
+    border-color: #10b981;
+    box-shadow: 0 0 0 1px #10b981 inset;
+  }
+
+  @keyframes pulseOnce {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+  .pulse-once { animation: pulseOnce 0.5s ease; }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeSlideIn 0.35s ease both; }
+
+  #toast {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .timer-ring { transition: stroke-dashoffset 1s linear; }
+</style>
+</head>
+<body class="bg-slate-900 text-slate-50 antialiased">
+
+<!-- ============ TOAST ============ -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-xl glass text-sm font-semibold shadow-2xl opacity-0 translate-y-4 pointer-events-none">
+  Message
+</div>
+
+<!-- =========================================================
+     LANDING PAGE
+========================================================== -->
+<div id="landing">
+
+  <!-- NAV -->
+  <nav class="fixed top-0 inset-x-0 z-40 glass">
+    <div class="max-w-6xl mx-auto px-5 py-4 flex items-center justify-between">
+      <div class="font-display text-2xl font-bold tracking-wide">Gym<span class="text-emerald-500">Buddy</span></div>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+        <a href="#features" class="hover:text-emerald-400 transition">Features</a>
+        <a href="#how" class="hover:text-emerald-400 transition">How it works</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="openAuth('login')" class="text-sm font-semibold text-slate-200 hover:text-white transition px-3 py-2">Log In</button>
+        <button onclick="openAuth('signup')" class="text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-4 py-2 rounded-lg transition shadow-lg shadow-emerald-500/20">Get Started</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="relative min-h-[92vh] flex items-end md:items-center">
+    <div class="absolute inset-0">
+      <img src="https://images.unsplash.com/photo-1517963879433-6ad2b056d712?auto=format&fit=crop&w=1600&q=70"
+           onerror="this.onerror=null;this.src=PLACEHOLDER_IMG;"
+           alt="Dramatic gym lighting" class="w-full h-full object-cover">
+      <div class="absolute inset-0 hero-scrim"></div>
+    </div>
+
+    <div class="relative max-w-6xl mx-auto px-5 pt-32 pb-16 md:py-32 w-full">
+      <p class="text-emerald-400 font-semibold tracking-widest text-sm uppercase mb-4">AI Workouts for Beginners</p>
+      <h1 class="font-display font-extrabold text-5xl sm:text-6xl md:text-7xl leading-[0.95] max-w-3xl">
+        Overcome Gym Anxiety.<br>
+        <span class="text-emerald-500">Master Your Workout.</span>
+      </h1>
+      <p class="mt-6 text-lg md:text-xl text-slate-300 max-w-xl">
+        GymBuddy hands you a simple 3-exercise plan the second you walk in, swaps out any machine that's busy, and tracks every set with one tap. No experience required.
+      </p>
+
+      <div class="mt-8 flex flex-wrap gap-4">
+        <button onclick="openAuth('signup')" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-7 py-3.5 rounded-xl transition shadow-xl shadow-emerald-500/25 hover:-translate-y-0.5">
+          Start Free →
+        </button>
+        <a href="#features" class="glass hover:bg-slate-700/60 font-semibold px-7 py-3.5 rounded-xl transition text-center">
+          See How It Works
+        </a>
+      </div>
+
+      <!-- Stats banner -->
+      <div class="mt-14 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 max-w-2xl">
+        <div>
+          <div class="font-display text-3xl sm:text-4xl font-bold text-emerald-500">10,000+</div>
+          <div class="text-xs sm:text-sm text-slate-400 mt-1">Workouts Completed</div>
+        </div>
+        <div>
+          <div class="font-display text-3xl sm:text-4xl font-bold text-amber-500">4.9<span class="text-lg">★</span></div>
+          <div class="text-xs sm:text-sm text-slate-400 mt-1">Average Rating</div>
+        </div>
+        <div>
+          <div class="font-display text-3xl sm:text-4xl font-bold text-slate-50">15+</div>
+          <div class="text-xs sm:text-sm text-slate-400 mt-1">Exercises in Library</div>
+        </div>
+        <div>
+          <div class="font-display text-3xl sm:text-4xl font-bold text-slate-50">0</div>
+          <div class="text-xs sm:text-sm text-slate-400 mt-1">Experience Needed</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- FEATURES -->
+  <section id="features" class="max-w-6xl mx-auto px-5 py-24">
+    <div class="max-w-2xl mb-14">
+      <p class="text-emerald-400 font-semibold tracking-widest text-sm uppercase mb-3">Why GymBuddy</p>
+      <h2 class="font-display font-bold text-4xl md:text-5xl">Everything a first-timer actually needs</h2>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div class="gradient-border hover:-translate-y-1 transition duration-300">
+        <div class="bg-slate-800 rounded-2xl p-6 h-full">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-2xl mb-5">🎯</div>
+          <h3 class="font-display font-bold text-xl mb-2">3-Exercise Daily Plans</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">No 12-exercise spreadsheets. Just one legs, one push, one pull movement — built around your goal and available equipment.</p>
+        </div>
+      </div>
+
+      <div class="gradient-border hover:-translate-y-1 transition duration-300">
+        <div class="bg-slate-800 rounded-2xl p-6 h-full">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center text-2xl mb-5">🔄</div>
+          <h3 class="font-display font-bold text-xl mb-2">Instant Machine Swap</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Someone's hogging the cable rack? Tap Swap for an equally effective alternative in seconds — no more standing around.</p>
+        </div>
+      </div>
+
+      <div class="gradient-border hover:-translate-y-1 transition duration-300">
+        <div class="bg-slate-800 rounded-2xl p-6 h-full">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-2xl mb-5">✅</div>
+          <h3 class="font-display font-bold text-xl mb-2">One-Tap Set Tracking</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Log a set with a single tap. Watch your progress bar fill up in real time — zero typing mid-workout.</p>
+        </div>
+      </div>
+
+      <div class="gradient-border hover:-translate-y-1 transition duration-300">
+        <div class="bg-slate-800 rounded-2xl p-6 h-full">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center text-2xl mb-5">⚖️</div>
+          <h3 class="font-display font-bold text-xl mb-2">Weight Guidance</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Never guess your starting weight again. GymBuddy suggests a beginner-safe load for every exercise.</p>
+        </div>
+      </div>
+
+      <div class="gradient-border hover:-translate-y-1 transition duration-300">
+        <div class="bg-slate-800 rounded-2xl p-6 h-full">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-2xl mb-5">⏱️</div>
+          <h3 class="font-display font-bold text-xl mb-2">Built-In Rest Timer</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">A countdown that matches your goal's rest interval, so you're never checking the clock on your phone.</p>
+        </div>
+      </div>
+
+      <div class="gradient-border hover:-translate-y-1 transition duration-300">
+        <div class="bg-slate-800 rounded-2xl p-6 h-full">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center text-2xl mb-5">🔥</div>
+          <h3 class="font-display font-bold text-xl mb-2">Streak Tracking</h3>
+          <p class="text-slate-400 text-sm leading-relaxed">Every completed workout builds your streak. Small, visible wins that keep beginners coming back.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS / IMAGE STRIP -->
+  <section id="how" class="max-w-6xl mx-auto px-5 pb-24">
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="rounded-2xl overflow-hidden h-56 md:h-72 relative group">
+        <img src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=800&q=65" onerror="this.onerror=null;this.src=PLACEHOLDER_IMG;" alt="Barbell setup" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+        <div class="absolute bottom-4 left-4 font-display font-bold text-lg">1. Pick your goal</div>
+      </div>
+      <div class="rounded-2xl overflow-hidden h-56 md:h-72 relative group">
+        <img src="https://images.unsplash.com/photo-1584466977773-e625c37cdd50?auto=format&fit=crop&w=800&q=65" onerror="this.onerror=null;this.src=PLACEHOLDER_IMG;" alt="Dumbbell rack" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+        <div class="absolute bottom-4 left-4 font-display font-bold text-lg">2. Get 3 exercises</div>
+      </div>
+      <div class="rounded-2xl overflow-hidden h-56 md:h-72 relative group">
+        <img src="https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?auto=format&fit=crop&w=800&q=65" onerror="this.onerror=null;this.src=PLACEHOLDER_IMG;" alt="Treadmill cardio" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
+        <div class="absolute bottom-4 left-4 font-display font-bold text-lg">3. Log sets & go</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-slate-800 py-10">
+    <div class="max-w-6xl mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+      <div class="font-display font-bold text-slate-300">Gym<span class="text-emerald-500">Buddy</span></div>
+      <div>Prototype build — no real account data is transmitted anywhere.</div>
+    </div>
+  </footer>
+</div>
+
+<!-- =========================================================
+     AUTH MODAL
+========================================================== -->
+<div id="authOverlay" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center px-4">
+  <div class="glass rounded-2xl w-full max-w-md p-7 relative fade-in">
+    <button onclick="closeAuth()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition text-xl leading-none">✕</button>
+
+    <div class="font-display font-bold text-2xl mb-6">Gym<span class="text-emerald-500">Buddy</span></div>
+
+    <div class="flex mb-6 rounded-xl bg-slate-900/60 p-1">
+      <button id="tabSignup" onclick="switchAuthTab('signup')" class="flex-1 py-2 rounded-lg text-sm font-semibold transition">Sign Up</button>
+      <button id="tabLogin" onclick="switchAuthTab('login')" class="flex-1 py-2 rounded-lg text-sm font-semibold transition">Log In</button>
+    </div>
+
+    <!-- SIGN UP FORM -->
+    <form id="signupForm" onsubmit="handleSignup(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Name</label>
+        <input required type="text" id="suName" class="w-full bg-slate-900/70 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-3.5 py-2.5 text-sm transition" placeholder="Jordan Lee">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Email</label>
+        <input required type="email" id="suEmail" class="w-full bg-slate-900/70 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-3.5 py-2.5 text-sm transition" placeholder="you@example.com">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Password</label>
+        <input required type="password" minlength="4" id="suPassword" class="w-full bg-slate-900/70 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-3.5 py-2.5 text-sm transition" placeholder="At least 4 characters">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Primary Goal</label>
+        <select id="suGoal" class="w-full bg-slate-900/70 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-3.5 py-2.5 text-sm transition">
+          <option value="fatloss">Lose Fat</option>
+          <option value="muscle">Build Muscle</option>
+          <option value="general" selected>General Fitness</option>
+        </select>
+      </div>
+      <p id="signupError" class="text-amber-400 text-xs hidden"></p>
+      <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-lg transition">Create Account</button>
+    </form>
+
+    <!-- LOG IN FORM -->
+    <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 hidden">
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Email</label>
+        <input required type="email" id="liEmail" class="w-full bg-slate-900/70 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-3.5 py-2.5 text-sm transition" placeholder="you@example.com">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 mb-1.5">Password</label>
+        <input required type="password" id="liPassword" class="w-full bg-slate-900/70 border border-slate-700 focus:border-emerald-500 outline-none rounded-lg px-3.5 py-2.5 text-sm transition" placeholder="••••••••">
+      </div>
+      <p id="loginError" class="text-amber-400 text-xs hidden"></p>
+      <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold py-3 rounded-lg transition">Log In</button>
+    </form>
+  </div>
+</div>
+
+<!-- =========================================================
+     DASHBOARD (hidden until logged in)
+========================================================== -->
+<div id="dashboard" class="hidden min-h-screen">
+
+  <!-- TOP NAV -->
+  <nav class="sticky top-0 z-30 glass">
+    <div class="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div id="avatarInitial" class="w-10 h-10 rounded-full bg-emerald-500 text-slate-900 font-bold flex items-center justify-center text-lg">J</div>
+        <div>
+          <div class="text-sm text-slate-400 leading-none">Welcome back,</div>
+          <div id="greetName" class="font-display font-bold text-lg leading-tight">Jordan</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="streakBadge" class="hidden sm:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold px-3.5 py-2 rounded-full text-sm">
+          🔥 <span id="streakCount">0</span>-Day Streak
+        </div>
+        <button onclick="toggleOnboarding()" class="text-slate-300 hover:text-white text-xl transition" title="Preferences">⚙️</button>
+        <button onclick="logout()" class="text-sm font-semibold text-slate-300 hover:text-red-400 transition px-3 py-2">Log Out</button>
+      </div>
+    </div>
+    <div id="streakBadgeMobile" class="sm:hidden flex justify-center pb-3">
+      <div class="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold px-3.5 py-1.5 rounded-full text-xs">
+        🔥 <span id="streakCountMobile">0</span>-Day Streak
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-5xl mx-auto px-5 py-8 space-y-8">
+
+    <!-- ONBOARDING / PREFERENCES PANEL -->
+    <section id="onboardingPanel" class="gradient-border">
+      <div class="bg-slate-800 rounded-2xl p-6">
+        <h2 class="font-display font-bold text-2xl mb-1">Quick Setup</h2>
+        <p class="text-slate-400 text-sm mb-6">Takes 30 seconds. Tell us your goal and what's available today.</p>
+
+        <div class="mb-6">
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Goal</div>
+          <div class="flex flex-wrap gap-2" id="goalButtons">
+            <button data-goal="fatloss" onclick="selectGoal('fatloss', this)" class="goal-btn border border-slate-700 rounded-lg px-4 py-2 text-sm font-semibold transition hover:border-emerald-500">🔥 Lose Fat</button>
+            <button data-goal="muscle" onclick="selectGoal('muscle', this)" class="goal-btn border border-slate-700 rounded-lg px-4 py-2 text-sm font-semibold transition hover:border-emerald-500">💪 Build Muscle</button>
+            <button data-goal="general" onclick="selectGoal('general', this)" class="goal-btn border border-slate-700 rounded-lg px-4 py-2 text-sm font-semibold transition hover:border-emerald-500">⚡ General Fitness</button>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Available Equipment</div>
+          <div class="flex flex-wrap gap-2" id="equipChips">
+            <button data-equip="machine" onclick="toggleEquip(this,'machine')" class="chip border border-slate-700 rounded-lg px-4 py-2 text-sm font-medium transition">🏗️ Machines</button>
+            <button data-equip="dumbbell" onclick="toggleEquip(this,'dumbbell')" class="chip border border-slate-700 rounded-lg px-4 py-2 text-sm font-medium transition">🏋️ Dumbbells</button>
+            <button data-equip="cable" onclick="toggleEquip(this,'cable')" class="chip border border-slate-700 rounded-lg px-4 py-2 text-sm font-medium transition">🔗 Cables</button>
+            <button data-equip="barbell" onclick="toggleEquip(this,'barbell')" class="chip border border-slate-700 rounded-lg px-4 py-2 text-sm font-medium transition">🏋️‍♂️ Barbell</button>
+            <button data-equip="bodyweight" onclick="toggleEquip(this,'bodyweight')" class="chip border border-slate-700 rounded-lg px-4 py-2 text-sm font-medium transition">🤸 Bodyweight</button>
+          </div>
+        </div>
+
+        <button onclick="generateWorkout()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold px-6 py-3 rounded-xl transition shadow-lg shadow-emerald-500/20">
+          Generate My Workout →
+        </button>
+      </div>
+    </section>
+
+    <!-- WORKOUT SECTION -->
+    <section id="workoutSection" class="hidden space-y-5">
+      <div class="flex items-center justify-between">
+        <h2 class="font-display font-bold text-2xl">Today's Workout</h2>
+        <span id="overallPct" class="text-sm font-semibold text-slate-400">0% complete</span>
+      </div>
+      <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+        <div id="overallBar" class="h-full bg-gradient-to-r from-emerald-500 to-amber-500 transition-all duration-500" style="width:0%"></div>
+      </div>
+
+      <div id="workoutCards" class="grid md:grid-cols-3 gap-5"></div>
+    </section>
+
+    <div id="emptyState" class="text-center py-16 text-slate-500">
+      <div class="text-4xl mb-3">👆</div>
+      Finish the quick setup above to get your first workout.
+    </div>
+
+  </main>
+</div>
+
+<!-- =========================================================
+     REST TIMER MODAL
+========================================================== -->
+<div id="restTimerModal" class="hidden fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center px-4">
+  <div class="glass rounded-2xl w-full max-w-sm p-8 text-center fade-in">
+    <div class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Rest Timer</div>
+    <div id="timerExerciseName" class="font-display font-bold text-xl mb-6">Get ready</div>
+
+    <div class="relative w-44 h-44 mx-auto mb-6">
+      <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="54" fill="none" stroke="#1e293b" stroke-width="10"/>
+        <circle id="timerRing" class="timer-ring" cx="60" cy="60" r="54" fill="none" stroke="#10b981" stroke-width="10"
+                stroke-linecap="round" stroke-dasharray="339.29" stroke-dashoffset="0"/>
+      </svg>
+      <div class="absolute inset-0 flex items-center justify-center">
+        <span id="timerText" class="font-display font-bold text-4xl">60s</span>
+      </div>
+    </div>
+
+    <div class="flex gap-3 justify-center">
+      <button onclick="pauseResumeTimer()" id="timerPauseBtn" class="glass px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-700/60 transition">Pause</button>
+      <button onclick="resetTimer()" class="glass px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-700/60 transition">Reset</button>
+      <button onclick="closeRestTimer()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-900 px-5 py-2.5 rounded-lg font-bold text-sm transition">Skip</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA
+============================================================ */
+const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'>
+     <rect width='400' height='300' fill='#1e293b'/>
+     <rect x='150' y='140' width='100' height='20' rx='4' fill='#10b981'/>
+     <rect x='118' y='118' width='26' height='64' rx='7' fill='#f8fafc' opacity='0.85'/>
+     <rect x='256' y='118' width='26' height='64' rx='7' fill='#f8fafc' opacity='0.85'/>
+   </svg>`
+);
+
+const EQUIP_IMG = {
+  machine:   'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=500&q=60',
+  dumbbell:  'https://images.unsplash.com/photo-1584466977773-e625c37cdd50?auto=format&fit=crop&w=500&q=60',
+  barbell:   'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=500&q=60',
+  cable:     'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=500&q=60',
+  bodyweight:'https://images.unsplash.com/photo-1571731956672-f2b94d7dd0cb?auto=format&fit=crop&w=500&q=60',
+};
+
+const EQUIP_LABEL = {
+  machine: 'Machine', dumbbell: 'Dumbbell', barbell: 'Barbell', cable: 'Cable', bodyweight: 'Bodyweight'
+};
+
+const SLOT_LABEL = { legs: '🦵 Legs', push: '💥 Push', pull: '🎣 Pull' };
+
+const EXERCISES = {
+  legs: [
+    { name: 'Leg Press Machine',    equip: 'machine',    cue: 'Feet shoulder-width on the plate, push through your heels.', baseWeight: 70, unit: 'lbs' },
+    { name: 'Goblet Squat',         equip: 'dumbbell',   cue: 'Hold one dumbbell at chest height, squat between your knees.', baseWeight: 20, unit: 'lbs' },
+    { name: 'Barbell Back Squat',   equip: 'barbell',    cue: 'Bar on your upper back, brace your core, sit back and down.', baseWeight: 45, unit: 'lbs' },
+    { name: 'Cable Pull-Through',   equip: 'cable',      cue: 'Face away from the stack, hinge at the hips, squeeze glutes to stand.', baseWeight: 30, unit: 'lbs' },
+    { name: 'Bodyweight Squat',     equip: 'bodyweight', cue: 'Feet hip-width, chest up, squat until thighs are parallel.', baseWeight: 0, unit: 'bodyweight' },
+  ],
+  push: [
+    { name: 'Chest Press Machine',  equip: 'machine',    cue: 'Grips at chest height, press forward without locking elbows.', baseWeight: 40, unit: 'lbs' },
+    { name: 'Dumbbell Bench Press', equip: 'dumbbell',   cue: 'One dumbbell in each hand, press up over your chest.', baseWeight: 15, unit: 'lbs' },
+    { name: 'Barbell Bench Press',  equip: 'barbell',    cue: 'Bar over your chest, lower with control, press back up.', baseWeight: 45, unit: 'lbs' },
+    { name: 'Cable Chest Fly',      equip: 'cable',      cue: 'Step forward, bring handles together in a hugging motion.', baseWeight: 15, unit: 'lbs' },
+    { name: 'Push-Up',              equip: 'bodyweight', cue: 'Hands under shoulders, lower chest to the floor, press back up.', baseWeight: 0, unit: 'bodyweight' },
+  ],
+  pull: [
+    { name: 'Lat Pulldown Machine', equip: 'machine',    cue: 'Grip the bar wide, pull down to your upper chest.', baseWeight: 40, unit: 'lbs' },
+    { name: 'Dumbbell Row',         equip: 'dumbbell',   cue: 'Hinge forward, pull the dumbbell to your hip.', baseWeight: 20, unit: 'lbs' },
+    { name: 'Barbell Row',          equip: 'barbell',    cue: 'Hinge at the hips, pull the bar to your lower ribs.', baseWeight: 45, unit: 'lbs' },
+    { name: 'Seated Cable Row',     equip: 'cable',      cue: 'Sit tall, pull the handle to your waist, squeeze your back.', baseWeight: 35, unit: 'lbs' },
+    { name: 'Inverted Row',         equip: 'bodyweight', cue: 'Under a bar, body straight, pull your chest to the bar.', baseWeight: 0, unit: 'bodyweight' },
+  ],
+};
+
+const GOALS = {
+  fatloss: { label: 'Lose Fat',        sets: 3, reps: 15, rest: 45, weightMult: 0.8  },
+  muscle:  { label: 'Build Muscle',    sets: 4, reps: 8,  rest: 90, weightMult: 1.15 },
+  general: { label: 'General Fitness', sets: 3, reps: 12, rest: 60, weightMult: 1.0  },
+};
+
+const DB_KEY = 'gymbuddy_v2';
+
+/* ============================================================
+   PERSISTENCE
+============================================================ */
+function loadDB() {
+  try {
+    return JSON.parse(localStorage.getItem(DB_KEY)) || { users: {}, session: null };
+  } catch (e) {
+    return { users: {}, session: null };
+  }
+}
+function saveDB(db) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+function getCurrentUser() {
+  const db = loadDB();
+  return db.session ? db.users[db.session] : null;
+}
+function updateUser(mutator) {
+  const db = loadDB();
+  if (!db.session) return;
+  mutator(db.users[db.session]);
+  saveDB(db);
+}
+
+/* ============================================================
+   TOAST
+============================================================ */
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('opacity-0', 'translate-y-4');
+  t.classList.add('opacity-100', 'translate-y-0');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    t.classList.add('opacity-0', 'translate-y-4');
+    t.classList.remove('opacity-100', 'translate-y-0');
+  }, 2600);
+}
+
+/* ============================================================
+   AUTH MODAL
+============================================================ */
+function openAuth(tab) {
+  document.getElementById('authOverlay').classList.remove('hidden');
+  switchAuthTab(tab || 'signup');
+}
+function closeAuth() {
+  document.getElementById('authOverlay').classList.add('hidden');
+}
+function switchAuthTab(tab) {
+  const signupForm = document.getElementById('signupForm');
+  const loginForm = document.getElementById('loginForm');
+  const tabSignup = document.getElementById('tabSignup');
+  const tabLogin = document.getElementById('tabLogin');
+
+  if (tab === 'signup') {
+    signupForm.classList.remove('hidden');
+    loginForm.classList.add('hidden');
+    tabSignup.classList.add('bg-emerald-500', 'text-slate-900');
+    tabLogin.classList.remove('bg-emerald-500', 'text-slate-900');
+  } else {
+    loginForm.classList.remove('hidden');
+    signupForm.classList.add('hidden');
+    tabLogin.classList.add('bg-emerald-500', 'text-slate-900');
+    tabSignup.classList.remove('bg-emerald-500', 'text-slate-900');
+  }
+}
+
+function showFormError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function hideFormError(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+function handleSignup(e) {
+  e.preventDefault();
+  hideFormError('signupError');
+  const name = document.getElementById('suName').value.trim();
+  const email = document.getElementById('suEmail').value.trim().toLowerCase();
+  const password = document.getElementById('suPassword').value;
+  const goal = document.getElementById('suGoal').value;
+
+  const db = loadDB();
+  if (db.users[email]) {
+    showFormError('signupError', 'An account with this email already exists — try logging in.');
+    return;
+  }
+
+  db.users[email] = {
+    name, email, password, goal,
+    equipment: ['machine', 'dumbbell', 'cable', 'barbell', 'bodyweight'],
+    streak: 0,
+    lastCompleted: null,
+    currentWorkout: null,
+  };
+  db.session = email;
+  saveDB(db);
+
+  closeAuth();
+  enterDashboard(true);
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  hideFormError('loginError');
+  const email = document.getElementById('liEmail').value.trim().toLowerCase();
+  const password = document.getElementById('liPassword').value;
+
+  const db = loadDB();
+  const user = db.users[email];
+  if (!user || user.password !== password) {
+    showFormError('loginError', 'Incorrect email or password.');
+    return;
+  }
+  db.session = email;
+  saveDB(db);
+
+  closeAuth();
+  enterDashboard(false);
+}
+
+function logout() {
+  const db = loadDB();
+  db.session = null;
+  saveDB(db);
+  document.getElementById('dashboard').classList.add('hidden');
+  document.getElementById('landing').classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+
+/* ============================================================
+   DASHBOARD
+============================================================ */
+function enterDashboard(isNewUser) {
+  document.getElementById('landing').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  renderDashboard();
+  if (isNewUser) {
+    toast(`Welcome to GymBuddy, ${getCurrentUser().name.split(' ')[0]}! 🎉`);
+  } else {
+    toast(`Welcome back, ${getCurrentUser().name.split(' ')[0]}!`);
+  }
+}
+
+function renderDashboard() {
+  const user = getCurrentUser();
+  if (!user) return;
+
+  document.getElementById('greetName').textContent = user.name.split(' ')[0];
+  document.getElementById('avatarInitial').textContent = user.name.trim()[0].toUpperCase();
+  document.getElementById('streakCount').textContent = user.streak;
+  document.getElementById('streakCountMobile').textContent = user.streak;
+
+  // reflect goal selection
+  document.querySelectorAll('.goal-btn').forEach(b => {
+    b.classList.toggle('active-goal', b.dataset.goal === user.goal);
+  });
+  // reflect equipment selection
+  document.querySelectorAll('.chip').forEach(c => {
+    c.classList.toggle('active-chip', user.equipment.includes(c.dataset.equip));
+  });
+
+  if (user.currentWorkout) {
+    document.getElementById('onboardingPanel').classList.add('hidden');
+    document.getElementById('workoutSection').classList.remove('hidden');
+    document.getElementById('emptyState').classList.add('hidden');
+    renderWorkout(user);
+  } else {
+    document.getElementById('onboardingPanel').classList.remove('hidden');
+    document.getElementById('workoutSection').classList.add('hidden');
+    document.getElementById('emptyState').classList.remove('hidden');
+  }
+}
+
+function toggleOnboarding() {
+  document.getElementById('onboardingPanel').classList.toggle('hidden');
+}
+
+function selectGoal(goal, btn) {
+  document.querySelectorAll('.goal-btn').forEach(b => b.classList.remove('active-goal'));
+  btn.classList.add('active-goal');
+  updateUser(u => { u.goal = goal; });
+}
+
+function toggleEquip(chip, equip) {
+  const user = getCurrentUser();
+  const active = user.equipment.includes(equip);
+  if (active && user.equipment.length === 1) {
+    toast('Keep at least one equipment type selected.');
+    return;
+  }
+  updateUser(u => {
+    if (active) u.equipment = u.equipment.filter(e => e !== equip);
+    else u.equipment.push(equip);
+  });
+  chip.classList.toggle('active-chip', !active);
+}
+
+/* ============================================================
+   WORKOUT GENERATION
+============================================================ */
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generateWorkout() {
+  const slots = ['legs', 'push', 'pull'];
+  updateUser(user => {
+    user.currentWorkout = slots.map(slot => {
+      const pool = EXERCISES[slot].filter(e => user.equipment.includes(e.equip));
+      const list = pool.length ? pool : EXERCISES[slot];
+      return { slot, ex: pickRandom(list), setsCompleted: Array(GOALS[user.goal].sets).fill(false) };
+    });
+  });
+  toast('Your workout is ready 💪');
+  renderDashboard();
+}
+
+function computeWeightGuidance(ex, goal) {
+  if (ex.equip === 'bodyweight') return 'Bodyweight — focus on clean form';
+  const mult = GOALS[goal].weightMult;
+  let w = Math.round((ex.baseWeight * mult) / 5) * 5;
+  if (w < 5) w = 5;
+  return `Suggested start: ${w} ${ex.unit} — adjust after set 1`;
+}
+
+function renderWorkout(user) {
+  const goalCfg = GOALS[user.goal];
+  const container = document.getElementById('workoutCards');
+  container.innerHTML = user.currentWorkout.map((card, cardIdx) => {
+    const completed = card.setsCompleted.filter(Boolean).length;
+    const pct = Math.round((completed / card.setsCompleted.length) * 100);
+    const img = EQUIP_IMG[card.ex.equip] || PLACEHOLDER_IMG;
+
+    const dots = card.setsCompleted.map((done, i) => `
+      <button onclick="toggleSet('${card.slot}', ${i})"
+        class="set-dot w-9 h-9 rounded-full border-2 border-slate-600 text-xs font-bold flex items-center justify-center ${done ? 'done' : 'text-slate-400 hover:border-emerald-500'}">
+        ${done ? '✓' : i + 1}
+      </button>
+    `).join('');
+
+    return `
+    <div class="gradient-border fade-in">
+      <div class="bg-slate-800 rounded-2xl overflow-hidden h-full flex flex-col">
+        <div class="h-36 relative">
+          <img src="${img}" onerror="this.onerror=null;this.src=PLACEHOLDER_IMG;" alt="${card.ex.name}" class="w-full h-full object-cover">
+          <span class="absolute top-3 left-3 text-xs font-bold bg-slate-900/80 px-2.5 py-1 rounded-full">${SLOT_LABEL[card.slot]}</span>
+        </div>
+        <div class="p-5 flex-1 flex flex-col">
+          <h3 class="font-display font-bold text-xl mb-1">${card.ex.name}</h3>
+          <p class="text-xs text-slate-500 mb-1">${EQUIP_LABEL[card.ex.equip]} · ${goalCfg.sets} sets × ${goalCfg.reps} reps</p>
+          <p class="text-slate-400 text-xs leading-relaxed mb-3">${card.ex.cue}</p>
+
+          <div class="text-xs font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mb-4">
+            ⚖️ ${computeWeightGuidance(card.ex, user.goal)}
+          </div>
+
+          <div class="flex gap-2 mb-4 flex-wrap">${dots}</div>
+
+          <div class="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden mb-4">
+            <div class="h-full bg-emerald-500 transition-all duration-300" style="width:${pct}%"></div>
+          </div>
+
+          <div class="mt-auto flex gap-2">
+            <button onclick="swapExercise('${card.slot}')" class="flex-1 glass hover:bg-slate-700/60 transition rounded-lg py-2 text-xs font-semibold">
+              🔄 Swap
+            </button>
+            <button onclick="openRestTimer('${card.slot}')" class="flex-1 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 transition rounded-lg py-2 text-xs font-semibold">
+              ⏱️ Rest
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const totalSets = user.currentWorkout.reduce((n, c) => n + c.setsCompleted.length, 0);
+  const doneSets = user.currentWorkout.reduce((n, c) => n + c.setsCompleted.filter(Boolean).length, 0);
+  const overallPct = totalSets ? Math.round((doneSets / totalSets) * 100) : 0;
+  document.getElementById('overallBar').style.width = overallPct + '%';
+  document.getElementById('overallPct').textContent = overallPct + '% complete';
+}
+
+function swapExercise(slot) {
+  const user = getCurrentUser();
+  const card = user.currentWorkout.find(c => c.slot === slot);
+  const usedNames = user.currentWorkout.map(c => c.ex.name);
+
+  let pool = EXERCISES[slot].filter(e => user.equipment.includes(e.equip) && !usedNames.includes(e.name));
+  if (!pool.length) pool = EXERCISES[slot].filter(e => e.name !== card.ex.name);
+  if (!pool.length) return;
+
+  updateUser(u => {
+    const c = u.currentWorkout.find(c => c.slot === slot);
+    c.ex = pickRandom(pool);
+    c.setsCompleted = Array(GOALS[u.goal].sets).fill(false);
+  });
+  toast(`🔄 Swapped in ${getCurrentUser().currentWorkout.find(c => c.slot === slot).ex.name}`);
+  renderWorkout(getCurrentUser());
+}
+
+function toggleSet(slot, idx) {
+  updateUser(u => {
+    const card = u.currentWorkout.find(c => c.slot === slot);
+    card.setsCompleted[idx] = !card.setsCompleted[idx];
+  });
+  renderWorkout(getCurrentUser());
+  checkCompletion();
+}
+
+function checkCompletion() {
+  const user = getCurrentUser();
+  const allDone = user.currentWorkout.every(c => c.setsCompleted.every(Boolean));
+  if (!allDone) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  if (user.lastCompleted === today) return;
+
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  updateUser(u => {
+    u.streak = (u.lastCompleted === yesterday) ? u.streak + 1 : 1;
+    u.lastCompleted = today;
+  });
+
+  const updated = getCurrentUser();
+  document.getElementById('streakCount').textContent = updated.streak;
+  document.getElementById('streakCountMobile').textContent = updated.streak;
+  const badge = document.getElementById('streakBadge');
+  badge.classList.add('pulse-once');
+  setTimeout(() => badge.classList.remove('pulse-once'), 500);
+
+  toast(`🎉 Workout complete! Streak: ${updated.streak}-day${updated.streak > 1 ? 's' : ''}`);
+}
+
+/* ============================================================
+   REST TIMER
+============================================================ */
+const TIMER_CIRCUMFERENCE = 339.29;
+let timerInterval = null;
+let timerRemaining = 0;
+let timerTotal = 0;
+let timerPaused = false;
+
+function openRestTimer(slot) {
+  const user = getCurrentUser();
+  const goalCfg = GOALS[user.goal];
+  const card = user.currentWorkout.find(c => c.slot === slot);
+
+  timerTotal = goalCfg.rest;
+  timerRemaining = goalCfg.rest;
+  timerPaused = false;
+  document.getElementById('timerExerciseName').textContent = `Rest after ${card.ex.name}`;
+  document.getElementById('timerPauseBtn').textContent = 'Pause';
+  renderTimerTick();
+
+  document.getElementById('restTimerModal').classList.remove('hidden');
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if (timerPaused) return;
+    timerRemaining--;
+    renderTimerTick();
+    if (timerRemaining <= 0) {
+      clearInterval(timerInterval);
+      toast('⏱️ Rest complete — back to it!');
+      setTimeout(closeRestTimer, 700);
+    }
+  }, 1000);
+}
+
+function renderTimerTick() {
+  document.getElementById('timerText').textContent = Math.max(timerRemaining, 0) + 's';
+  const offset = TIMER_CIRCUMFERENCE * (1 - Math.max(timerRemaining, 0) / timerTotal);
+  document.getElementById('timerRing').style.strokeDashoffset = offset;
+}
+
+function pauseResumeTimer() {
+  timerPaused = !timerPaused;
+  document.getElementById('timerPauseBtn').textContent = timerPaused ? 'Resume' : 'Pause';
+}
+
+function resetTimer() {
+  timerRemaining = timerTotal;
+  timerPaused = false;
+  document.getElementById('timerPauseBtn').textContent = 'Pause';
+  renderTimerTick();
+}
+
+function closeRestTimer() {
+  clearInterval(timerInterval);
+  document.getElementById('restTimerModal').classList.add('hidden');
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+(function init() {
+  const db = loadDB();
+  if (db.session && db.users[db.session]) {
+    document.getElementById('landing').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    renderDashboard();
+  }
+})();
+</script>
+</body>
+</html>

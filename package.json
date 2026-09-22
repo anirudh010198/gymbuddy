@@ -1,0 +1,14 @@
+{
+  "name": "gymbuddy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GymBuddy V1: a 3-exercise daily workout with one-tap swaps for beginner gym-goers",
+  "scripts": {
+    "build:css": "tailwindcss -i src/input.css -o css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i src/input.css -o css/tailwind.css --watch",
+    "start": "npx serve . -l 5173"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.16"
+  }
+}
