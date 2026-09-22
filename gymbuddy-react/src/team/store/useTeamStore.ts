@@ -1,6 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { EMPTY_SYNTHESIS, type FunnelStageKey, type Insight, type Interview, type Iteration, type Synthesis, type Tester } from '../types'
+import {
+  EMPTY_SYNTHESIS,
+  type AiSynthesisDraft,
+  type FunnelStageKey,
+  type Insight,
+  type Interview,
+  type Iteration,
+  type Synthesis,
+  type Tester,
+} from '../types'
 
 function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
@@ -10,6 +19,7 @@ export interface TeamState {
   interviews: Interview[]
   testers: Tester[]
   synthesis: Synthesis
+  aiDraft: AiSynthesisDraft | null
 
   addInterview: (data: Omit<Interview, 'id' | 'at'>) => void
   deleteInterview: (id: string) => void
@@ -22,6 +32,7 @@ export interface TeamState {
   updateInsight: (index: number, patch: Partial<Insight>) => void
   updateKilledHypothesis: (v: string) => void
   updateIteration: (patch: Partial<Iteration>) => void
+  setAiDraft: (draft: AiSynthesisDraft | null) => void
 
   /** Merges another device's raw backup export into this one: interviews/testers
    *  deduped by id, synthesis fields filled only where currently empty (never
@@ -35,6 +46,7 @@ export const useTeamStore = create<TeamState>()(
       interviews: [],
       testers: [],
       synthesis: EMPTY_SYNTHESIS,
+      aiDraft: null,
 
       addInterview: (data) => set((s) => ({ interviews: [...s.interviews, { ...data, id: uid(), at: Date.now() }] })),
       deleteInterview: (id) => set((s) => ({ interviews: s.interviews.filter((i) => i.id !== id) })),
@@ -57,6 +69,7 @@ export const useTeamStore = create<TeamState>()(
         })),
       updateKilledHypothesis: (v) => set((s) => ({ synthesis: { ...s.synthesis, killedHypothesis: v } })),
       updateIteration: (patch) => set((s) => ({ synthesis: { ...s.synthesis, iteration: { ...s.synthesis.iteration, ...patch } } })),
+      setAiDraft: (draft) => set({ aiDraft: draft }),
 
       importBackup: (data) =>
         set((s) => {

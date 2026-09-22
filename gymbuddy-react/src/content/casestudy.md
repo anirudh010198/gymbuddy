@@ -15,7 +15,10 @@ per-set reps + weight logging pre-filled from last time; a workout breakdown
 with vs-last-time comparisons and personal-best detection; bonus-tip unlocks
 in Build-muscle mode; weekly streak and 14-day calendar; a muscle map, PB
 pulse, next-workout teaser and share card; History and Settings; a hidden
-research console at `/team`; installable offline PWA.
+research console at `/team` with manual + AI-assisted synthesis; installable
+offline PWA; an optional "Ask GymBuddy" coach per exercise (Gemini via a
+Vercel serverless function), hidden when offline or unconfigured, capped at
+10 questions/user/day, never diagnoses injuries.
 
 **V2 (deferred, not built this pass):** a persistent rest countdown bar under
 each exercise card (we shipped a rest-reminder toast instead, to keep the
@@ -48,12 +51,22 @@ badges/XP. V1 stays a floor companion, not a fitness platform.
    and guarantees the shared image only ever contains the numbers we choose
    to draw — never a stray bit of UI chrome.
 
+4. **The AI coach looks up exercise cues server-side instead of trusting the
+   client-sent copy.** Trade-off: the serverless function re-imports the
+   exercise library and rebuilds the system prompt from the exercise id
+   alone, ignoring any cue text the client could send — a little more
+   coupling between `api/` and `src/engine/`, but the coaching prompt can't
+   be tampered with by editing request payloads.
+
 ## Build
 
 **Stack:** Vite + React 18 + TypeScript, Tailwind CSS v3 with CSS-variable
 design tokens for light/dark, React Router, Zustand + persist, Framer
 Motion, vite-plugin-pwa, self-hosted Barlow / Barlow Condensed via
-@fontsource, Vitest for the engine. No backend, no database.
+@fontsource, Vitest for the engine, Playwright for e2e. No database — two
+Vercel serverless functions (`api/ask.ts`, `api/synthesize.ts`) call the
+Gemini API for the optional AI features, but the core workout loop has no
+backend dependency at all and works fully offline.
 
 **What broke → how we fixed it:**
 
@@ -66,14 +79,11 @@ Motion, vite-plugin-pwa, self-hosted Barlow / Barlow Condensed via
 
 ## What's next (3-month roadmap)
 
-1. **AI coach ("Ask GymBuddy") for form/weight questions** — gated behind an
-   environment variable and a daily per-user question cap, because the core
-   loop must keep working offline and without AI even after this ships.
-2. **Movement diagrams and equipment line illustrations** — probably the
+1. **Movement diagrams and equipment line illustrations** — probably the
    highest-leverage thing left for beginners who don't know equipment by
    name; deferred only because it needs one consistent illustration pass
    rather than one-off SVGs.
-3. **Real interview and test data** — the point of the research console.
+2. **Real interview and test data** — the point of the research console.
    Nothing in this page's Research or Metrics sections is honest until the
    team runs interviews and test sessions through `/team` and exports
    `research.json`.

@@ -12,8 +12,9 @@ export const V1_SCOPE = [
   'Weekly streak + 14-day calendar',
   'Muscle map, PB pulse, next-workout teaser, share card',
   'History (read-only) and Settings (goal/equipment/target, export, reset)',
-  'Hidden research console (/team): interviews, test funnel, manual synthesis, research.json export',
+  'Hidden research console (/team): interviews, test funnel, manual + AI-assisted synthesis, research.json export',
   'Installable, offline-first PWA',
+  'Optional "Ask GymBuddy" coach per exercise (Gemini via a Vercel serverless function) — hidden when offline or unconfigured, capped at 10 questions/user/day, never diagnoses injuries',
 ]
 
 export const V2_SCOPE = [
@@ -52,6 +53,11 @@ export const DECISIONS: Decision[] = [
     tradeoff:
       'More code than "screenshot this div", but keeps the dependency list at exactly what the tech stack specifies and guarantees the shared image only ever contains the numbers chosen to draw — never stray UI chrome.',
   },
+  {
+    title: 'The AI coach looks up exercise cues server-side instead of trusting the client-sent copy',
+    tradeoff:
+      "The serverless function re-imports the exercise library and rebuilds the system prompt from the exercise id alone, ignoring any cue text the client could send. A little more coupling between api/ and src/engine/, but it means the coaching prompt can't be tampered with by editing request payloads.",
+  },
 ]
 
 export const STACK = [
@@ -62,8 +68,8 @@ export const STACK = [
   'Framer Motion',
   'vite-plugin-pwa',
   'Self-hosted Barlow / Barlow Condensed via @fontsource',
-  'Vitest for the engine',
-  'No backend, no database',
+  'Vitest for the engine, Playwright for e2e',
+  'No database. Two Vercel serverless functions (api/ask.ts, api/synthesize.ts) call the Gemini API for the optional AI features — the core workout loop has no backend dependency at all and works fully offline',
 ]
 
 export interface BrokeFixedRow {
@@ -90,10 +96,6 @@ export interface RoadmapItem {
 }
 
 export const ROADMAP: RoadmapItem[] = [
-  {
-    title: 'AI coach ("Ask GymBuddy") for form/weight questions',
-    reason: 'Gated behind an environment variable and a daily per-user question cap — the core loop must keep working offline and without AI even after this ships.',
-  },
   {
     title: 'Movement diagrams and equipment line illustrations',
     reason: "Probably the highest-leverage thing left for beginners who don't know equipment by name; deferred only because it needs one consistent illustration pass rather than one-off SVGs.",

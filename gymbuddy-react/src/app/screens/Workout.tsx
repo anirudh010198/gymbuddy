@@ -13,7 +13,9 @@ import MuscleMap from '../components/MuscleMap'
 import SwapSheet from '../components/SwapSheet'
 import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
 import RepWeightSheet from '../components/RepWeightSheet'
+import AskCoachSheet from '../components/AskCoachSheet'
 import Toast from '../components/Toast'
+import { useAiAvailable } from '../lib/useAiAvailable'
 
 function reasonLabel(r: Reason) {
   return r === 'busy' ? 'equipment busy' : r === 'unsure' ? "wasn't sure how" : 'felt uncomfortable'
@@ -42,6 +44,8 @@ export default function Workout() {
   const [editing, setEditing] = useState<{ itemIndex: number; setIndex: number } | null>(null)
   const [pbDone, setPbDone] = useState<Set<number>>(new Set())
   const [pulse, setPulse] = useState<{ itemIndex: number; setIndex: number } | null>(null)
+  const [askIndex, setAskIndex] = useState<number | null>(null)
+  const aiAvailable = useAiAvailable()
   const toastTimer = useRef<number | undefined>(undefined)
   const pulseTimer = useRef<number | undefined>(undefined)
   const cardRefs = useRef<(HTMLElement | null)[]>([])
@@ -185,6 +189,15 @@ export default function Workout() {
                 <p className="mt-1 text-sm text-muted">
                   <b>Avoid:</b> {e.avoid} <b>Start:</b> {e.start}
                 </p>
+                {aiAvailable && (
+                  <button
+                    type="button"
+                    className="mt-2 text-sm font-semibold underline decoration-line underline-offset-2"
+                    onClick={() => setAskIndex(ix)}
+                  >
+                    Ask GymBuddy
+                  </button>
+                )}
                 <div className="mt-4 flex gap-4" role="group" aria-label="Log sets">
                   {it.sets.map((s, si) => (
                     <div key={si} className="flex flex-col items-center gap-1.5">
@@ -268,6 +281,12 @@ export default function Workout() {
         weight={editingSet?.weight ?? null}
         onChange={(patch) => editing && setSetValues(editing.itemIndex, editing.setIndex, patch)}
         onClose={() => setEditing(null)}
+      />
+      <AskCoachSheet
+        open={askIndex !== null}
+        exercise={askIndex !== null ? BY_ID[active.items[askIndex].id] : null}
+        goal={profile.goal}
+        onClose={() => setAskIndex(null)}
       />
     </>
   )

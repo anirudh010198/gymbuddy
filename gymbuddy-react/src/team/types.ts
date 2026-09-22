@@ -82,3 +82,14 @@ export const EMPTY_SYNTHESIS: Synthesis = {
   killedHypothesis: '',
   iteration: { saw: '', assumed: '', changed: '', result: '' },
 }
+
+/** AI-generated draft (api/synthesize), kept separate from the manually
+ *  authored Synthesis fields above — a suggestion the team reviews and
+ *  copies in by hand, never auto-published. */
+export interface AiSynthesisDraft {
+  insights: Insight[]
+  persona: { goal: string; behaviour: string; frustration: string } | null
+  problem: string | null
+  generatedAt: number
+  interviewCount: number
+}
