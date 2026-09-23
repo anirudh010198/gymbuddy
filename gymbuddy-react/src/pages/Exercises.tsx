@@ -2,33 +2,12 @@ import { useMemo, useState } from 'react'
 import SiteHeader from '../site/components/SiteHeader'
 import SiteFooter from '../site/components/SiteFooter'
 import FormGuide from '../app/components/FormGuide'
+import { EQUIP_FILTER_OPTIONS, LEVEL_FILTER_OPTIONS, FilterChip } from '../app/components/ExerciseFilters'
 import { EXERCISES } from '../engine/exercises'
 import { GROUP_LABEL } from '../engine/templates'
 import type { Equip, Group } from '../engine/types'
 
-const EQUIP_OPTIONS: { key: Equip; label: string }[] = [
-  { key: 'machine', label: 'Machine' },
-  { key: 'dumbbell', label: 'Dumbbell' },
-  { key: 'cable', label: 'Cable' },
-  { key: 'barbell', label: 'Barbell' },
-  { key: 'bodyweight', label: 'Bodyweight' },
-]
-
-const LEVEL_OPTIONS = [1, 2, 3] as const
 const GROUPS: Group[] = ['legs', 'push', 'pull']
-
-function FilterChip({ pressed, onClick, children }: { pressed: boolean; onClick: () => void; children: string }) {
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      onClick={onClick}
-      className={`rounded-full border-2 px-3 py-1.5 text-sm font-semibold ${pressed ? 'border-plate bg-plate/20' : 'border-line bg-card'}`}
-    >
-      {children}
-    </button>
-  )
-}
 
 export default function Exercises() {
   const [query, setQuery] = useState('')
@@ -85,7 +64,7 @@ export default function Exercises() {
           <div>
             <div className="text-sm font-semibold text-muted">Equipment</div>
             <div className="mt-2 flex flex-wrap gap-2">
-              {EQUIP_OPTIONS.map((o) => (
+              {EQUIP_FILTER_OPTIONS.map((o) => (
                 <FilterChip key={o.key} pressed={equipFilter.has(o.key)} onClick={() => toggleEquip(o.key)}>
                   {o.label}
                 </FilterChip>
@@ -95,7 +74,7 @@ export default function Exercises() {
           <div>
             <div className="text-sm font-semibold text-muted">Level</div>
             <div className="mt-2 flex flex-wrap gap-2">
-              {LEVEL_OPTIONS.map((l) => (
+              {LEVEL_FILTER_OPTIONS.map((l) => (
                 <FilterChip key={l} pressed={levelFilter.has(l)} onClick={() => toggleLevel(l)}>
                   {`Level ${l}`}
                 </FilterChip>

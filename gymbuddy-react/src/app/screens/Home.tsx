@@ -9,14 +9,19 @@ import ProgressBar from '../components/ProgressBar'
 import WeekDots from '../components/WeekDots'
 import InstallHint from '../components/InstallHint'
 import DaySelectSheet from '../components/DaySelectSheet'
+import BuildWorkoutFlow from '../components/BuildWorkoutFlow'
 
 export default function Home() {
   const profile = useGym((s) => s.profile)!
   const history = useGym((s) => s.history)
   const active = useGym((s) => s.active)
+  const lastCustomWorkout = useGym((s) => s.lastCustomWorkout)
   const startWorkout = useGym((s) => s.startWorkout)
+  const startCustomWorkout = useGym((s) => s.startCustomWorkout)
+  const setPeekHome = useGym((s) => s.setPeekHome)
   const changeGoal = useGym((s) => s.changeGoal)
   const [daySelectOpen, setDaySelectOpen] = useState(false)
+  const [buildOpen, setBuildOpen] = useState(false)
 
   const wc = weekCount(history, weekStart(today()))
   const st = streakWeeks(history, profile.target)
@@ -27,8 +32,8 @@ export default function Home() {
   const suggested = suggestNextGroup(profile.lastGroup)
 
   function handleStartTap() {
-    if (resumable && active) {
-      startWorkout(active.group, active.length) // no-op guard inside the store — just lets screen-derivation resume it
+    if (resumable) {
+      setPeekHome(false) // just clears the mid-workout "peek" flag so screen-derivation resumes it
       return
     }
     setDaySelectOpen(true)
@@ -37,7 +42,7 @@ export default function Home() {
   return (
     <Wrap>
       <div className="mt-2 flex items-center justify-between">
-        <div className="font-display text-2xl font-extrabold">GymBuddy</div>
+        <div className="font-display text-2xl font-extrabold">Today</div>
         <button type="button" className="text-sm font-semibold text-muted" onClick={changeGoal}>
           Change goal
         </button>
@@ -98,12 +103,31 @@ export default function Home() {
         open={daySelectOpen}
         lastGroup={profile.lastGroup}
         suggestFull={history.length >= 2}
+        lastCustomWorkout={lastCustomWorkout}
         onStart={(group, length) => {
           setDaySelectOpen(false)
           startWorkout(group, length)
         }}
+        onBuildOwn={() => {
+          setDaySelectOpen(false)
+          setBuildOpen(true)
+        }}
+        onRepeatCustom={() => {
+          setDaySelectOpen(false)
+          if (lastCustomWorkout) startCustomWorkout(lastCustomWorkout.group, lastCustomWorkout.picks)
+        }}
         onClose={() => setDaySelectOpen(false)}
       />
+      {buildOpen && (
+        <BuildWorkoutFlow
+          goal={profile.goal}
+          onStart={(group, picks) => {
+            setBuildOpen(false)
+            startCustomWorkout(group, picks)
+          }}
+          onClose={() => setBuildOpen(false)}
+        />
+      )}
     </Wrap>
   )
 }

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import Sheet from './Sheet'
 import { suggestNextGroup } from '../../engine/swap'
-import type { Group, SessionLength } from '../../engine/types'
+import { GROUP_LABEL } from '../../engine/templates'
+import type { Group, SavedCustomWorkout, SessionLength } from '../../engine/types'
 
 const DAY_OPTIONS: { group: Group; label: string; sub: string }[] = [
   { group: 'legs', label: 'Legs', sub: 'Quads, hamstrings, glutes' },
@@ -13,14 +14,20 @@ export default function DaySelectSheet({
   open,
   lastGroup,
   suggestFull,
+  lastCustomWorkout,
   onStart,
+  onBuildOwn,
+  onRepeatCustom,
   onClose,
 }: {
   open: boolean
   lastGroup: Group | null | undefined
   /** History.length >= 2 — after the first 2 workouts, Full is pre-selected instead of Quick. */
   suggestFull: boolean
+  lastCustomWorkout: SavedCustomWorkout | null
   onStart: (group: Group, length: SessionLength) => void
+  onBuildOwn: () => void
+  onRepeatCustom: () => void
   onClose: () => void
 }) {
   const [length, setLength] = useState<SessionLength>(suggestFull ? 'full' : 'quick')
@@ -57,7 +64,7 @@ export default function DaySelectSheet({
         </button>
       </div>
 
-      <div className="mt-4 grid gap-2">
+      <div className="mt-4 grid max-h-[55vh] gap-2 overflow-y-auto">
         {DAY_OPTIONS.map((o) => (
           <button
             key={o.group}
@@ -88,6 +95,35 @@ export default function DaySelectSheet({
             <div className="text-sm text-muted">We'll rotate to whatever you trained least recently.</div>
           </div>
         </button>
+        <button
+          type="button"
+          onClick={onBuildOwn}
+          className="flex w-full items-center justify-between gap-2 rounded-2xl border-2 border-line bg-card p-4 text-left"
+        >
+          <div>
+            <div className="font-display font-bold" style={{ fontSize: '1.2rem' }}>
+              Build my own
+            </div>
+            <div className="text-sm text-muted">Pick your own exercises, sets and reps.</div>
+          </div>
+        </button>
+        {lastCustomWorkout && (
+          <button
+            type="button"
+            onClick={onRepeatCustom}
+            className="flex w-full items-center justify-between gap-2 rounded-2xl border-2 border-dashed border-line bg-card p-4 text-left"
+          >
+            <div>
+              <div className="font-display font-bold" style={{ fontSize: '1.2rem' }}>
+                Repeat my last custom workout
+              </div>
+              <div className="text-sm text-muted">
+                {lastCustomWorkout.picks.length} exercise{lastCustomWorkout.picks.length === 1 ? '' : 's'} ·{' '}
+                {lastCustomWorkout.group === 'mixed' ? 'Mixed' : GROUP_LABEL[lastCustomWorkout.group]}
+              </div>
+            </div>
+          </button>
+        )}
       </div>
     </Sheet>
   )

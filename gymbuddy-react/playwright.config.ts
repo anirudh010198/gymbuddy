@@ -6,6 +6,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',
+  // More setup steps per test now (persistent nav, day-select's extra
+  // options, effort chips) push some flows close to the 30s default under
+  // parallel worker contention — 45s gives real headroom, not just slack.
+  timeout: 45_000,
   use: {
     baseURL: 'http://localhost:5180',
     trace: 'retain-on-failure',

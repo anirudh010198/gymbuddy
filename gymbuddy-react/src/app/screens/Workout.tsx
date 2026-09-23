@@ -6,7 +6,7 @@ import { GROUP_LABEL } from '../../engine/templates'
 import { GOALS } from '../../engine/goals'
 import { findLastLog, formatLastTime, isPB } from '../../engine/progress'
 import { ageBracketFor, restSecondsFor, restReasonNote, warmupNote, startWeightNote } from '../../engine/age'
-import type { Exercise, Group, Reason } from '../../engine/types'
+import type { EffortLabel, Exercise, Group, Reason } from '../../engine/types'
 import { Wrap, Tag, PrimaryButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
 import Plate from '../components/Plate'
@@ -29,16 +29,26 @@ function formatSetLabel(reps: number, weight: number | null) {
   return weight != null ? `${r} × ${weight % 1 === 0 ? weight : weight.toFixed(1)}kg` : `${r} reps`
 }
 
+/** Post-set effort self-rating — visible for every user, every goal, every
+ *  age. Age only ever changes rest timing (see engine/age.ts), never which
+ *  features render. */
+const EFFORT_LEVELS: { key: EffortLabel; label: string }[] = [
+  { key: 'casual', label: 'Casual Arc' },
+  { key: 'sigma', label: 'Sigma Arc' },
+  { key: 'god', label: 'God Mode' },
+  { key: 'aura', label: 'Aura Farming' },
+]
+
 export default function Workout() {
   const active = useGym((s) => s.active)!
   const profile = useGym((s) => s.profile)!
   const history = useGym((s) => s.history)
   const logSet = useGym((s) => s.logSet)
   const setSetValues = useGym((s) => s.setSetValues)
+  const setEffort = useGym((s) => s.setEffort)
   const previewSwap = useGym((s) => s.previewSwap)
   const applySwap = useGym((s) => s.applySwap)
   const finishWorkout = useGym((s) => s.finishWorkout)
-  const setPeekHome = useGym((s) => s.setPeekHome)
   const reduce = useReducedMotion()
 
   const [swapIndex, setSwapIndex] = useState<number | null>(null)
@@ -68,16 +78,27 @@ export default function Workout() {
   const total = active.items.reduce((a, it) => a + it.sets.length, 0)
   const done = active.items.reduce((a, i) => a + i.sets.filter((s) => s.completedAt != null).length, 0)
 
-  // Today's session is a single chosen group now, not one item per group —
-  // the muscle map highlights that one region proportional to overall
-  // completion; the other two stay empty and are non-interactive.
+  // Progress (and scroll target) is computed per item's own exercise group,
+  // not the session's nominal group — a regular single-group day only ever
+  // has items in one group (identical to the old behaviour), while a mixed
+  // "Build my own" day gets an accurate per-region breakdown instead of
+  // matching nothing.
+  function itemsForGroup(group: Group) {
+    return active.items.filter((it) => BY_ID[it.id].group === group)
+  }
+
   function progressForGroup(group: Group) {
-    return group === active.group ? done / Math.max(1, total) : 0
+    const items = itemsForGroup(group)
+    if (!items.length) return 0
+    const t = items.reduce((a, it) => a + it.sets.length, 0)
+    const d = items.reduce((a, it) => a + it.sets.filter((s) => s.completedAt != null).length, 0)
+    return d / Math.max(1, t)
   }
 
   function scrollToGroup(group: Group) {
-    if (group !== active.group) return
-    cardRefs.current[0]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+    const idx = active.items.findIndex((it) => BY_ID[it.id].group === group)
+    if (idx === -1) return
+    cardRefs.current[idx]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
   }
 
   function handleReason(reason: Reason) {
@@ -125,10 +146,7 @@ export default function Workout() {
     <>
       <Toast message={toast} />
       <Wrap>
-        <div className="mt-2 flex items-center justify-between">
-          <button type="button" className="font-semibold text-muted" onClick={() => setPeekHome(true)}>
-            Home
-          </button>
+        <div className="mt-2 flex items-center justify-end">
           <Tag>
             <span data-testid="sets-progress">
               {done}/{total} sets
@@ -136,11 +154,11 @@ export default function Workout() {
           </Tag>
         </div>
         <h1 className="mt-3 font-display font-extrabold leading-none" style={{ fontSize: '2.4rem' }}>
-          {GROUP_LABEL[active.group]} day
+          {active.group === 'mixed' ? 'Your workout' : `${GROUP_LABEL[active.group]} day`}
         </h1>
         <p className="text-muted">
-          {active.length === 'quick' ? 'Quick' : 'Full'} session · Rest {restSeconds}s between sets. Last 2 reps should feel
-          hard, not impossible.
+          {active.length === 'custom' ? 'Custom' : active.length === 'quick' ? 'Quick' : 'Full'} session · Rest {restSeconds}s
+          between sets. Last 2 reps should feel hard, not impossible.
         </p>
         {restReasonNote(ageBracket) && <p className="mt-1 text-sm text-muted">{restReasonNote(ageBracket)}</p>}
         {warmupNote(ageBracket) && (
@@ -289,6 +307,26 @@ export default function Workout() {
                     </div>
                   ))}
                 </div>
+                {it.sets.some((s) => s.completedAt != null) && (
+                  <div className="mt-4" role="group" aria-label="Effort for this exercise">
+                    <div className="text-sm font-semibold text-muted">How did that feel?</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {EFFORT_LEVELS.map((lvl) => (
+                        <button
+                          key={lvl.key}
+                          type="button"
+                          aria-pressed={it.effort === lvl.key}
+                          onClick={() => setEffort(ix, lvl.key)}
+                          className={`rounded-full border-2 px-3 py-1.5 text-sm font-semibold ${
+                            it.effort === lvl.key ? 'border-plate bg-plate/20' : 'border-line'
+                          }`}
+                        >
+                          {lvl.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {it.tipShown && profile.goal === 'muscle' && (
                   <motion.div
                     initial={{ opacity: 0, y: reduce ? 0 : 8, height: 0 }}
@@ -305,7 +343,7 @@ export default function Workout() {
           })}
         </div>
       </Wrap>
-      <Dock>
+      <Dock raised>
         <PrimaryButton disabled={done === 0} onClick={finishWorkout}>
           {done === total ? 'Finish workout' : done ? `Finish with ${done}/${total} sets` : 'Log a set to finish'}
         </PrimaryButton>

@@ -6,6 +6,8 @@ import Onboarding from './screens/Onboarding'
 import Workout from './screens/Workout'
 import Summary from './screens/Summary'
 import TabsShell from './TabsShell'
+import AppTopBar from './components/AppTopBar'
+import BottomNav from './components/BottomNav'
 
 type ScreenName = 'onboarding' | 'workout' | 'summary' | 'home'
 
@@ -34,10 +36,22 @@ export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
   const screen = useScreen()
   const reduce = useReducedMotion()
   const Screen = SCREENS[screen]
+  const activeTab = useGym((s) => s.activeTab)
+  const setActiveTab = useGym((s) => s.setActiveTab)
+  const setPeekHome = useGym((s) => s.setPeekHome)
   // The landing page embeds a second copy of this tree in its phone-frame demo —
   // asMain=false there so the page doesn't end up with two <main> landmarks.
   const Wrapper = asMain ? 'main' : 'div'
   const rootRef = useRef<HTMLElement | null>(null)
+
+  // Every screen except onboarding (no profile to route to yet) gets the
+  // persistent chrome, so there's always a way out without the browser back
+  // button. Tapping a bottom-nav tab both selects it and clears peekHome, so
+  // it also escapes an in-progress workout/summary back to that tab.
+  function handleTabChange(tab: Parameters<typeof setActiveTab>[0]) {
+    setActiveTab(tab)
+    setPeekHome(true)
+  }
 
   useEffect(() => {
     // Reset scroll position on every screen change. In the real /app the
@@ -66,6 +80,7 @@ export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
       }}
       className="min-h-screen bg-bg font-sans text-ink"
     >
+      {screen !== 'onboarding' && <AppTopBar showExitLink={asMain} />}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={screen}
@@ -77,6 +92,7 @@ export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
           <Screen />
         </motion.div>
       </AnimatePresence>
+      {screen !== 'onboarding' && <BottomNav active={activeTab} onChange={handleTabChange} />}
     </Wrapper>
   )
 }

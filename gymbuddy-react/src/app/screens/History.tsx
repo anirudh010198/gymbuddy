@@ -1,5 +1,6 @@
 import { useGym } from '../../store/GymStoreContext'
 import { BY_ID } from '../../engine/exercises'
+import { GROUP_LABEL } from '../../engine/templates'
 import { Wrap, Card, Tag } from '../components/ui'
 
 export default function History() {
@@ -25,7 +26,7 @@ export default function History() {
                   <span className="font-display font-bold" style={{ fontSize: '1.1rem' }}>
                     {h.date}
                   </span>
-                  <Tag>Workout {h.dayIndex % 2 ? 'B' : 'A'}</Tag>
+                  <Tag>{h.group ? (h.group === 'mixed' ? 'Mixed' : GROUP_LABEL[h.group]) : `Workout ${h.dayIndex % 2 ? 'B' : 'A'}`}</Tag>
                 </div>
                 <div className="mt-1 text-sm text-muted">
                   {h.sets} sets · {h.reps} reps{swapCount ? ` · ${swapCount} swap${swapCount > 1 ? 's' : ''}` : ''} · {h.mins} min

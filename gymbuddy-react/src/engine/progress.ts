@@ -36,6 +36,18 @@ export function defaultSetsFor(exerciseId: string, goal: GoalKey, history: Histo
   })
 }
 
+/** Same pre-fill rule as `defaultSetsFor` (inherit last time's reps/weight,
+ *  repeating the last known set if there were fewer sets last time), but for
+ *  a "Build my own" pick where the user chose one target-reps number
+ *  themselves rather than a goal-driven per-set target curve. */
+export function customSetsFor(exerciseId: string, history: HistoryEntry[], setsCount: number, targetReps: number): SetState[] {
+  const last = findLastLog(history, exerciseId)
+  return Array.from({ length: setsCount }, (_, i) => {
+    const prev = last ? (last[i] ?? last[last.length - 1]) : null
+    return { reps: prev?.reps ?? targetReps, weight: prev?.weight ?? null, completedAt: null }
+  })
+}
+
 /** 2.5 kg steps, except 1 kg steps for dumbbells under 10 kg (small enough
  *  that 2.5 kg jumps are too coarse for a beginner). */
 export function weightStep(exercise: Exercise, currentWeight: number | null): number {

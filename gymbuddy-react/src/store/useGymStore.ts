@@ -5,8 +5,24 @@ import { SETS, FULL_ACCESSORY_SETS } from '../engine/goals'
 import { today } from '../engine/dates'
 import { buildGroupWorkout, swapCandidates, type GroupWorkoutPick } from '../engine/swap'
 import { appendEvent } from '../engine/track'
-import { defaultSetsFor, goalTargetReps, totalReps, totalVolume, type SetState } from '../engine/progress'
-import type { Equip, Exercise, GoalKey, Group, HistoryEntry, Pattern, Profile, Reason, SessionLength, Swap, TrackEvent } from '../engine/types'
+import { customSetsFor, defaultSetsFor, goalTargetReps, totalReps, totalVolume, type SetState } from '../engine/progress'
+import type {
+  CustomWorkoutPick,
+  EffortLabel,
+  Equip,
+  Exercise,
+  GoalKey,
+  Group,
+  HistoryEntry,
+  Pattern,
+  Profile,
+  Reason,
+  SavedCustomWorkout,
+  SessionLength,
+  Swap,
+  TabKey,
+  TrackEvent,
+} from '../engine/types'
 
 export type { SetState }
 
@@ -17,6 +33,9 @@ export interface ActiveItem {
   sets: SetState[]
   /** Build-muscle only: whether the "bonus tip unlocked" card has fired for this item. */
   tipShown: boolean
+  /** Post-set effort self-rating (Casual Arc/Sigma Arc/God Mode/Aura Farming) —
+   *  available for every user, every goal, every age; only rest timing changes by age. */
+  effort?: EffortLabel
 }
 
 export interface Active {
@@ -25,7 +44,8 @@ export interface Active {
   items: ActiveItem[]
   startedAt: number
   finished?: boolean
-  group: Group
+  /** 'mixed' only ever comes from a "Build my own" session not scoped to one group. */
+  group: Group | 'mixed'
   length: SessionLength
 }
 
@@ -41,18 +61,28 @@ export interface GymState {
   /** True while the user has tapped "Home" mid-workout to peek at the Home
    *  screen without abandoning today's in-progress workout. */
   peekHome: boolean
+  /** Which TabsShell tab is showing — lifted out of TabsShell so the
+   *  persistent bottom nav (visible on every app screen) can drive it too. */
+  activeTab: TabKey
+  /** The last "Build my own" session, so Home can offer a one-tap repeat. */
+  lastCustomWorkout: SavedCustomWorkout | null
 
   completeOnboarding: (goal: GoalKey, equip: Equip[], target: number, age?: number | null) => void
   changeGoal: () => void
   updateProfile: (patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target' | 'age'>>) => void
   resetData: () => void
   setPeekHome: (v: boolean) => void
+  setActiveTab: (t: TabKey) => void
   /** Builds and starts today's workout for one chosen muscle group and
    *  session length — there's no more parameterless auto-build; the day
    *  is always an explicit (if one-tap) choice. */
   startWorkout: (group: Group, length: SessionLength) => void
+  /** Starts a hand-built session from "Build my own" — exact exercises, set
+   *  counts and rep targets the user chose, not the generated picker. */
+  startCustomWorkout: (group: Group | 'mixed', picks: CustomWorkoutPick[]) => void
   logSet: (itemIndex: number, setIndex: number) => void
   setSetValues: (itemIndex: number, setIndex: number, patch: { reps?: number; weight?: number | null }) => void
+  setEffort: (itemIndex: number, effort: EffortLabel) => void
   /** Ranked candidates for the "Change exercise" list — pure, no mutation, but
    *  logs swap_opened. Returns [] when there's genuinely nothing left to swap to. */
   previewSwap: (itemIndex: number, reason: Reason) => Exercise[]
@@ -97,6 +127,7 @@ function migrateRaw(raw: unknown): StorageValue<Partial<GymState>> | null {
       events: (data.events as TrackEvent[]) ?? [],
       lastDone: (data.lastDone as string) ?? null,
       showSummary: (data.showSummary as boolean) ?? false,
+      lastCustomWorkout: (data.lastCustomWorkout as SavedCustomWorkout) ?? null,
     },
     version: 1,
   }
@@ -133,6 +164,7 @@ function sanitizeActive(raw: unknown, goal: GoalKey | undefined): Active | null 
       swaps: Array.isArray(it.swaps) ? (it.swaps as Swap[]) : [],
       sets,
       tipShown: (it.tipShown as boolean) ?? false,
+      effort: it.effort as EffortLabel | undefined,
     }
   })
   if (items.some((it) => !it.pattern || !BY_ID[it.id])) return null
@@ -142,7 +174,7 @@ function sanitizeActive(raw: unknown, goal: GoalKey | undefined): Active | null 
     items,
     startedAt: (a.startedAt as number) ?? Date.now(),
     finished: a.finished as boolean | undefined,
-    group: a.group as Group,
+    group: a.group as Group | 'mixed',
     length: a.length as SessionLength,
   }
 }
@@ -175,6 +207,7 @@ function sanitizeHistory(raw: unknown): HistoryEntry[] {
       mins: (h.mins as number) ?? 0,
       feel: h.feel as string | undefined,
       tipsUnlocked: Array.isArray(h.tipsUnlocked) ? (h.tipsUnlocked as string[]) : undefined,
+      group: h.group as Group | 'mixed' | undefined,
     }
   })
 }
@@ -242,8 +275,11 @@ export function createGymStore(
         lastDone: null,
         showSummary: false,
         peekHome: false,
+        activeTab: 'today',
+        lastCustomWorkout: null,
 
         setPeekHome: (v) => set({ peekHome: v }),
+        setActiveTab: (t) => set({ activeTab: t }),
 
         trackEvent: (type, data) => set((s) => ({ events: appendEvent(s.events, type, data) })),
 
@@ -260,7 +296,16 @@ export function createGymStore(
         updateProfile: (patch) => set((s) => (s.profile ? { profile: { ...s.profile, ...patch } } : s)),
 
         resetData: () =>
-          set({ profile: null, history: [], active: null, events: [], lastDone: null, showSummary: false, peekHome: false }),
+          set({
+            profile: null,
+            history: [],
+            active: null,
+            events: [],
+            lastDone: null,
+            showSummary: false,
+            peekHome: false,
+            lastCustomWorkout: null,
+          }),
 
         startWorkout: (group, length) => {
           const profile = get().profile
@@ -281,6 +326,33 @@ export function createGymStore(
           set({ active })
           get().trackEvent('workout_generated', { dayIndex, group, length })
           get().trackEvent('session_length', { length })
+        },
+
+        startCustomWorkout: (group, picks) => {
+          const profile = get().profile
+          if (!profile || !picks.length) return
+          set({ peekHome: false })
+          const existing = get().active
+          if (existing && existing.date === today() && !existing.finished) return
+          const dayIndex = get().history.length
+          const history = get().history
+          const items: ActiveItem[] = picks.map((p) => ({
+            pattern: BY_ID[p.id].pattern,
+            id: p.id,
+            swaps: [],
+            sets: customSetsFor(p.id, history, p.sets, p.reps),
+            tipShown: false,
+          }))
+          const active: Active = {
+            date: today(),
+            dayIndex,
+            startedAt: Date.now(),
+            group,
+            length: 'custom',
+            items,
+          }
+          set({ active, lastCustomWorkout: { group, picks } })
+          get().trackEvent('custom_workout_started', { exerciseCount: picks.length, group })
         },
 
         logSet: (itemIndex, setIndex) => {
@@ -319,6 +391,16 @@ export function createGymStore(
             return { ...it, sets }
           })
           set({ active: { ...active, items } })
+        },
+
+        setEffort: (itemIndex, effort) => {
+          const active = get().active
+          if (!active) return
+          const item = active.items[itemIndex]
+          if (!item) return
+          const items = active.items.map((it, i) => (i === itemIndex ? { ...it, effort } : it))
+          set({ active: { ...active, items } })
+          get().trackEvent('effort_logged', { ex: item.id, effort })
         },
 
         previewSwap: (itemIndex, reason) => {
@@ -375,13 +457,16 @@ export function createGymStore(
             items,
             mins: Math.round((Date.now() - active.startedAt) / 60000),
             tipsUnlocked: tipsUnlocked.length ? tipsUnlocked : undefined,
+            group: active.group,
           }
           set((s) => ({
             history: [...s.history, entry],
             active: { ...active, finished: true },
             lastDone: today(),
             showSummary: true,
-            profile: { ...profile, lastGroup: active.group },
+            // 'mixed' doesn't fit the legs->push->pull rotation — leave it
+            // undisturbed rather than derailing the next suggestion.
+            profile: { ...profile, lastGroup: active.group === 'mixed' ? profile.lastGroup : active.group },
           }))
           get().trackEvent('workout_done', { sets, swaps: active.items.reduce((a, i) => a + i.swaps.length, 0), group: active.group })
         },
@@ -402,8 +487,9 @@ export function createGymStore(
         name: storageKey,
         storage,
         version: 1,
-        // peekHome is transient UI state (mid-workout "Home" peek) — never persisted,
-        // so it can't get stuck true across a reload while a workout is still active.
+        // peekHome and activeTab are transient UI state — never persisted, so
+        // peekHome can't get stuck true across a reload while a workout is
+        // still active, and activeTab always starts back on Today.
         partialize: (state) => ({
           profile: state.profile,
           history: state.history,
@@ -411,6 +497,7 @@ export function createGymStore(
           events: state.events,
           lastDone: state.lastDone,
           showSummary: state.showSummary,
+          lastCustomWorkout: state.lastCustomWorkout,
         }),
       },
     ),

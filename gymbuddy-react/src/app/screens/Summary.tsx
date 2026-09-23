@@ -6,7 +6,7 @@ import { BY_ID } from '../../engine/exercises'
 import { GROUP_LABEL } from '../../engine/templates'
 import { buildGroupWorkout, suggestNextGroup } from '../../engine/swap'
 import { compareToLast, exerciseHasPB, findLastLog, totalReps } from '../../engine/progress'
-import { Wrap, Card, Chip, PrimaryButton, GhostButton, Dock } from '../components/ui'
+import { Wrap, Card, Chip, PrimaryButton, GhostButton, GhostLink, Dock } from '../components/ui'
 import WeekDots from '../components/WeekDots'
 import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
 import ProfileCaptureCard from '../components/ProfileCaptureCard'
@@ -197,8 +197,11 @@ export default function Summary() {
           .
         </p>
       </Card>
-      <Dock>
-        <PrimaryButton onClick={dismissSummary}>Done</PrimaryButton>
+      <Dock raised>
+        <div className="grid grid-cols-2 gap-2">
+          <GhostLink to="/">Back to home page</GhostLink>
+          <PrimaryButton onClick={dismissSummary}>Done</PrimaryButton>
+        </div>
       </Dock>
       <InfoSheet info={preview} onClose={() => setPreview(null)} />
     </Wrap>

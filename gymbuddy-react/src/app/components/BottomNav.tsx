@@ -1,12 +1,11 @@
 import { NAV_HEIGHT } from './layout'
+import type { TabKey } from '../../engine/types'
 
-const TABS = [
+const TABS: { key: TabKey; label: string }[] = [
   { key: 'today', label: 'Today' },
   { key: 'history', label: 'History' },
   { key: 'settings', label: 'Settings' },
-] as const
-
-export type TabKey = (typeof TABS)[number]['key']
+]
 
 export default function BottomNav({ active, onChange }: { active: TabKey; onChange: (key: TabKey) => void }) {
   return (

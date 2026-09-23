@@ -1,10 +1,21 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import PlateLogo from './PlateLogo'
 
 export default function SiteHeader() {
+  const location = useLocation()
+
+  // Already on the landing page: a Link to the same route is a no-op, so
+  // scroll to top explicitly instead of just re-navigating nowhere.
+  function handleLogoClick(e: React.MouseEvent) {
+    if (location.pathname === '/') {
+      e.preventDefault()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   return (
     <header className="mx-auto flex max-w-[1100px] items-center justify-between px-4 py-4 sm:px-6">
-      <Link to="/" className="flex items-center gap-2 text-ink">
+      <Link to="/" onClick={handleLogoClick} className="flex items-center gap-2 text-ink">
         <PlateLogo size={26} className="text-plate" />
         <span className="font-display text-xl font-extrabold">GymBuddy</span>
       </Link>

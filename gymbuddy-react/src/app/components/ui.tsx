@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { Link, type LinkProps } from 'react-router-dom'
 import { NAV_HEIGHT } from './layout'
 
 export function Wrap({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
@@ -43,6 +44,17 @@ export function GhostButton({ className = '', ...props }: ButtonHTMLAttributes<H
     <button
       type="button"
       className={`min-h-[52px] w-full rounded-2xl border-2 border-line px-4 py-3.5 font-display text-xl font-bold text-ink transition-transform active:scale-[0.98] ${className}`}
+      {...props}
+    />
+  )
+}
+
+/** Same visual style as GhostButton, but a real navigation (leaves the SPA
+ *  route) — for actions like "Back to home page" that must work as a link. */
+export function GhostLink({ className = '', ...props }: LinkProps) {
+  return (
+    <Link
+      className={`flex min-h-[52px] w-full items-center justify-center rounded-2xl border-2 border-line px-4 py-3.5 text-center font-display text-xl font-bold text-ink transition-transform active:scale-[0.98] ${className}`}
       {...props}
     />
   )

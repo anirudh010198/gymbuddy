@@ -44,7 +44,26 @@ export interface WorkoutItem {
   swaps: Swap[]
 }
 
-export type SessionLength = 'quick' | 'full'
+export type SessionLength = 'quick' | 'full' | 'custom'
+
+/** Post-set effort self-rating. Shown for every user, every goal, every age —
+ *  age only ever changes rest timing, never which features are visible. */
+export type EffortLabel = 'casual' | 'sigma' | 'god' | 'aura'
+
+export type TabKey = 'today' | 'history' | 'settings'
+
+export interface CustomWorkoutPick {
+  id: string
+  sets: number
+  reps: number
+}
+
+/** The last hand-built ("Build my own") session, saved so Home can offer
+ *  "Repeat my last custom workout" as a one-tap shortcut. */
+export interface SavedCustomWorkout {
+  group: Group | 'mixed'
+  picks: CustomWorkoutPick[]
+}
 
 export interface ActiveWorkout {
   date: string
@@ -89,6 +108,9 @@ export interface HistoryEntry {
   feel?: string
   /** Bonus-tip text unlocked this workout (Build-muscle goal only). */
   tipsUnlocked?: string[]
+  /** Absent on history predating single-group days. 'mixed' only ever comes
+   *  from a "Build my own" session that wasn't scoped to one group. */
+  group?: Group | 'mixed'
 }
 
 export type GoalKey = 'fat' | 'muscle' | 'fit'
