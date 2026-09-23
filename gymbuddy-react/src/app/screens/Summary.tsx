@@ -3,13 +3,15 @@ import { useGym } from '../../store/GymStoreContext'
 import { streakWeeks, weekCount } from '../../engine/streak'
 import { today, weekStart } from '../../engine/dates'
 import { BY_ID } from '../../engine/exercises'
-import { GROUP_LABEL, TEMPLATES } from '../../engine/templates'
-import { pickForPattern } from '../../engine/swap'
+import { GROUP_LABEL } from '../../engine/templates'
+import { buildGroupWorkout, suggestNextGroup } from '../../engine/swap'
 import { compareToLast, exerciseHasPB, findLastLog, totalReps } from '../../engine/progress'
 import { Wrap, Card, Chip, PrimaryButton, GhostButton, Dock } from '../components/ui'
 import WeekDots from '../components/WeekDots'
 import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
+import ProfileCaptureCard from '../components/ProfileCaptureCard'
 import { buildShareImage } from '../lib/shareCard'
+import { isProfileCaptureDismissed } from '../lib/contactProfile'
 
 const FEELS = ['Too easy', 'About right', 'Too hard'] as const
 
@@ -22,6 +24,7 @@ export default function Summary() {
   const [preview, setPreview] = useState<SwapInfo | null>(null)
   const [canShare, setCanShare] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [profileCaptureDone, setProfileCaptureDone] = useState(() => isProfileCaptureDismissed())
 
   useEffect(() => {
     setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function')
@@ -38,12 +41,10 @@ export default function Summary() {
   const msg = wc >= target ? "Weekly target hit. That's the whole game in month one." : `${target - wc} more this week to keep your streak.`
   const tips = last.tipsUnlocked ?? []
 
-  // history.length already includes the workout just finished, so it's also
-  // the dayIndex the *next* workout will build with (best-effort preview —
-  // actual picks may shift if equipment changes before then).
-  const nextDayIndex = history.length
-  const nextTemplate = TEMPLATES[nextDayIndex % 2]
-  const nextExercises = nextTemplate.map((p) => pickForPattern(p, profile.equip))
+  // finishWorkout already updated profile.lastGroup to the group just
+  // trained, so this is genuinely the suggestion for the *next* session.
+  const nextGroup = suggestNextGroup(profile.lastGroup)
+  const nextExercises = buildGroupWorkout(nextGroup, 'quick', profile.equip).map((p) => BY_ID[p.id])
 
   async function handleShare() {
     setSharing(true)
@@ -144,10 +145,12 @@ export default function Summary() {
         </Card>
       )}
 
+      {history.length === 1 && !profileCaptureDone && (
+        <ProfileCaptureCard defaultAge={profile.age} onDone={() => setProfileCaptureDone(true)} />
+      )}
+
       <Card className="mt-4 p-4">
-        <div className="text-sm font-semibold text-muted">
-          Next time: Workout {nextDayIndex % 2 ? 'B' : 'A'}
-        </div>
+        <div className="text-sm font-semibold text-muted">Next time: {GROUP_LABEL[nextGroup]} suggested</div>
         <p className="mt-1">
           {nextExercises.map((ex, i) => (
             <span key={ex.id}>

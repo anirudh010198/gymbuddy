@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import PlateLogo from './PlateLogo'
 
 export default function SiteFooter() {
@@ -12,7 +13,9 @@ export default function SiteFooter() {
           GymBuddy gives general guidance for healthy adults. Stop if you feel sharp or joint pain, and ask a qualified trainer
           or doctor.
         </p>
-        <p className="mt-4 text-xs text-[#9FB0B4]">Built for the PML Product Challenge.</p>
+        <p className="mt-4 text-xs text-[#9FB0B4]">
+          Built for the PML Product Challenge. <Link to="/privacy" className="underline decoration-[#5B6B70] underline-offset-2">Privacy</Link>
+        </p>
       </div>
     </footer>
   )

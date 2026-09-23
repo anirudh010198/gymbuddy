@@ -1,4 +1,4 @@
-import { GOALS } from './goals'
+import { GOALS, repTargetsFor } from './goals'
 import type { Exercise, GoalKey, HistoryEntry, SetEntry } from './types'
 
 /** A pending/logged set during an active workout — always has a concrete
@@ -24,14 +24,15 @@ export function findLastLog(history: HistoryEntry[], exerciseId: string): SetEnt
 }
 
 /** Pre-fills each set from last time's reps/weight (repeating the last known
- *  set if there were fewer sets last time), or the goal's target reps with a
- *  blank weight on a true first time. */
+ *  set if there were fewer sets last time), or this set's own per-set target
+ *  rep count (heavier/lower-rep as the set number climbs) with a blank
+ *  weight on a true first time. */
 export function defaultSetsFor(exerciseId: string, goal: GoalKey, history: HistoryEntry[], setsCount: number): SetState[] {
   const last = findLastLog(history, exerciseId)
-  const target = goalTargetReps(goal)
+  const targets = repTargetsFor(goal, setsCount)
   return Array.from({ length: setsCount }, (_, i) => {
     const prev = last ? (last[i] ?? last[last.length - 1]) : null
-    return { reps: prev?.reps ?? target, weight: prev?.weight ?? null, completedAt: null }
+    return { reps: prev?.reps ?? targets[i] ?? targets[targets.length - 1], weight: prev?.weight ?? null, completedAt: null }
   })
 }
 

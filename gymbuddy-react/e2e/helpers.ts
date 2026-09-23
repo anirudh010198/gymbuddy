@@ -23,12 +23,25 @@ export async function mockDate(page: Page, iso: string) {
   }, iso)
 }
 
-/** Completes onboarding with the first goal option and default equipment/target. */
+/** Completes onboarding with the first goal option and default equipment/target,
+ *  then opens the day-select sheet and starts a workout (onboarding no longer
+ *  auto-starts one). Defaults to a Legs day — the suggested first day when no
+ *  group has been trained yet — at whatever session length is pre-selected
+ *  (Quick for the first two workouts). */
 export async function completeOnboarding(page: Page) {
   await page.goto('/app')
   await page.locator('button[aria-pressed]').first().click() // first goal chip
   await page.getByRole('button', { name: 'Next' }).click()
   await page.getByRole('button', { name: 'Build my plan' }).click()
+  await startWorkout(page)
+}
+
+/** Opens the Home day-select sheet and starts a workout for the given day.
+ *  Regex name match: the day buttons also contain a muscle sub-label and,
+ *  for the suggested day, a "Suggested" badge — so an exact match would fail. */
+export async function startWorkout(page: Page, day: 'Legs' | 'Push' | 'Pull' = 'Legs') {
+  await page.getByRole('button', { name: "Start today's workout" }).click()
+  await page.getByRole('button', { name: new RegExp(`^${day}`) }).click()
 }
 
 /** Logs every set on every exercise card of the active workout. A small pause

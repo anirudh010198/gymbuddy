@@ -44,13 +44,22 @@ export interface WorkoutItem {
   swaps: Swap[]
 }
 
+export type SessionLength = 'quick' | 'full'
+
 export interface ActiveWorkout {
   date: string
   dayIndex: number
   items: WorkoutItem[]
   startedAt: number
   finished?: boolean
+  group?: Group
+  length?: SessionLength
 }
+
+/** Under 30 uses standard (goal-based) rest with no override; 30-40 and 40+
+ *  raise the rest floor and change warm-up/equipment guidance. Age is
+ *  optional and skippable everywhere it's asked. */
+export type AgeBracket = 'under30' | '30to40' | '40plus'
 
 /**
  * A single logged set. `reps` is nullable only to stay compatible with
@@ -89,6 +98,10 @@ export interface Profile {
   equip: Equip[]
   target: number
   created: string
+  /** Optional, skippable — adjusts rest/warm-up/equipment guidance locally. Never sent anywhere. */
+  age?: number | null
+  /** Last single-group day trained (legs/push/pull), for "suggest the next logical one". */
+  lastGroup?: Group | null
 }
 
 export interface TrackEvent {

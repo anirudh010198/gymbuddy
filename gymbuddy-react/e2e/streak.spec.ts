@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { finishWorkout, mockDate } from './helpers'
+import { finishWorkout, mockDate, startWorkout } from './helpers'
 
 test('streak counts a completed week, and a rest day / unfinished new week never resets it', async ({ page }) => {
   await mockDate(page, '2026-09-07T09:00:00') // Monday, week 1
@@ -7,6 +7,7 @@ test('streak counts a completed week, and a rest day / unfinished new week never
   await page.locator('button[aria-pressed]').first().click()
   await page.getByRole('button', { name: 'Next' }).click()
   await page.getByRole('button', { name: 'Build my plan' }).click() // weekly target defaults to 3
+  await startWorkout(page)
 
   async function doWorkoutAndReturnHome() {
     await finishWorkout(page)
@@ -17,12 +18,12 @@ test('streak counts a completed week, and a rest day / unfinished new week never
 
   await mockDate(page, '2026-09-09T09:00:00') // Wednesday (Tuesday was a rest day)
   await page.reload()
-  await page.getByRole('button', { name: "Start today's workout" }).click()
+  await startWorkout(page)
   await doWorkoutAndReturnHome() // Wednesday: 2/3
 
   await mockDate(page, '2026-09-11T09:00:00') // Friday
   await page.reload()
-  await page.getByRole('button', { name: "Start today's workout" }).click()
+  await startWorkout(page)
   await doWorkoutAndReturnHome() // Friday: 3/3 -> week 1 target met
 
   await expect(page.getByTestId('week-streak')).toHaveText('1')

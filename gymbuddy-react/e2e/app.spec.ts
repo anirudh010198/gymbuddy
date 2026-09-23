@@ -4,7 +4,7 @@ import { completeOnboarding, finishWorkout, pickFirstCandidate } from './helpers
 test('onboarding -> busy swap -> pain swap (safety sheet) -> log all sets -> finish -> summary shows 1/target', async ({ page }) => {
   await completeOnboarding(page)
 
-  await expect(page.getByRole('heading', { name: /Workout [AB]/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Legs day/ })).toBeVisible()
   const cards = page.locator('section[aria-label]')
   await expect(cards).toHaveCount(3)
 
@@ -41,6 +41,6 @@ test('resumes an in-progress workout after navigating away and back', async ({ p
   await page.goto('/')
   await page.goto('/app')
 
-  await expect(page.getByRole('heading', { name: /Workout [AB]/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Legs day/ })).toBeVisible()
   await expect(page.getByTestId('sets-progress')).toHaveText('1/9 sets')
 })

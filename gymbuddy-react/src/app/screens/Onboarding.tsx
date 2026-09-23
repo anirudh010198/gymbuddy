@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { GOALS, EQUIP_OPTIONS } from '../../engine/goals'
+import { ageBracketFor, suggestedTarget } from '../../engine/age'
 import type { Equip, GoalKey } from '../../engine/types'
 import { useGym } from '../../store/GymStoreContext'
 import { Wrap, Chip, PrimaryButton, Dock } from '../components/ui'
@@ -17,7 +18,16 @@ export default function Onboarding() {
   const [step, setStep] = useState<0 | 1>(0)
   const [goal, setGoal] = useState<GoalKey | null>(null)
   const [equip, setEquip] = useState<Set<Equip>>(new Set(['machine', 'cable', 'dumbbell']))
+  const [age, setAge] = useState('')
   const [target, setTarget] = useState(3)
+  const [targetTouched, setTargetTouched] = useState(false)
+
+  function handleAgeChange(v: string) {
+    setAge(v)
+    if (targetTouched) return
+    const n = v.trim() === '' ? null : Number(v)
+    setTarget(suggestedTarget(ageBracketFor(n)))
+  }
 
   function toggleEquip(k: Equip) {
     setEquip((prev) => {
@@ -96,12 +106,36 @@ export default function Onboarding() {
             </Chip>
           ))}
         </div>
+        <h3 className="mb-1 mt-6 font-display font-bold" style={{ fontSize: '1.4rem' }}>
+          Your age <span className="font-sans text-sm font-normal text-muted">(optional)</span>
+        </h3>
+        <p className="mb-2 text-sm text-muted">Helps us adjust warm-up and recovery. Skip if you'd rather not say.</p>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={13}
+          max={100}
+          value={age}
+          onChange={(e) => handleAgeChange(e.target.value)}
+          placeholder="Skip"
+          className="w-24 rounded-xl border-2 border-line bg-card p-2.5 text-ink outline-none focus-visible:border-plate"
+          aria-label="Your age (optional)"
+        />
+
         <h3 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.4rem' }}>
           Days a week you can realistically go
         </h3>
         <div className="grid grid-cols-3 gap-3">
           {[2, 3, 4].map((n) => (
-            <Chip key={n} pressed={target === n} className="text-center" onClick={() => setTarget(n)}>
+            <Chip
+              key={n}
+              pressed={target === n}
+              className="text-center"
+              onClick={() => {
+                setTarget(n)
+                setTargetTouched(true)
+              }}
+            >
               <span className="font-display font-bold" style={{ fontSize: '1.5rem' }}>
                 {n}
               </span>
@@ -111,7 +145,11 @@ export default function Onboarding() {
         <p className="mt-2 text-sm text-muted">Start lower than you think. Hitting 3 beats planning 6.</p>
       </Wrap>
       <Dock>
-        <PrimaryButton onClick={() => goal && completeOnboarding(goal, [...equip], target)}>Build my plan</PrimaryButton>
+        <PrimaryButton
+          onClick={() => goal && completeOnboarding(goal, [...equip], target, age.trim() === '' ? null : Number(age))}
+        >
+          Build my plan
+        </PrimaryButton>
         <p className="mt-2 text-center text-sm text-muted">Step 2 of 2</p>
       </Dock>
     </motion.div>

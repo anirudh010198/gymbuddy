@@ -3,8 +3,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useGym } from '../../store/GymStoreContext'
 import { BY_ID } from '../../engine/exercises'
 import { GROUP_LABEL } from '../../engine/templates'
-import { GOALS, SETS } from '../../engine/goals'
+import { GOALS } from '../../engine/goals'
 import { findLastLog, formatLastTime, isPB } from '../../engine/progress'
+import { ageBracketFor, restSecondsFor, restReasonNote, warmupNote, startWeightNote } from '../../engine/age'
 import type { Exercise, Group, Reason } from '../../engine/types'
 import { Wrap, Tag, PrimaryButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
@@ -62,23 +63,21 @@ export default function Workout() {
   }
 
   const g = GOALS[profile.goal]
-  const total = active.items.length * SETS
+  const ageBracket = ageBracketFor(profile.age)
+  const restSeconds = restSecondsFor(g.rest, ageBracket)
+  const total = active.items.reduce((a, it) => a + it.sets.length, 0)
   const done = active.items.reduce((a, i) => a + i.sets.filter((s) => s.completedAt != null).length, 0)
 
-  function indexForGroup(group: Group) {
-    return active.items.findIndex((it) => BY_ID[it.id].group === group)
-  }
-
+  // Today's session is a single chosen group now, not one item per group —
+  // the muscle map highlights that one region proportional to overall
+  // completion; the other two stay empty and are non-interactive.
   function progressForGroup(group: Group) {
-    const ix = indexForGroup(group)
-    if (ix === -1) return 0
-    const item = active.items[ix]
-    return item.sets.filter((s) => s.completedAt != null).length / item.sets.length
+    return group === active.group ? done / Math.max(1, total) : 0
   }
 
   function scrollToGroup(group: Group) {
-    const ix = indexForGroup(group)
-    cardRefs.current[ix]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+    if (group !== active.group) return
+    cardRefs.current[0]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
   }
 
   function handleReason(reason: Reason) {
@@ -137,11 +136,18 @@ export default function Workout() {
           </Tag>
         </div>
         <h1 className="mt-3 font-display font-extrabold leading-none" style={{ fontSize: '2.4rem' }}>
-          Workout {active.dayIndex % 2 ? 'B' : 'A'}
+          {GROUP_LABEL[active.group]} day
         </h1>
         <p className="text-muted">
-          {SETS} sets × {g.reps} reps. Rest {g.rest}s between sets. Last 2 reps should feel hard, not impossible.
+          {active.length === 'quick' ? 'Quick' : 'Full'} session · Rest {restSeconds}s between sets. Last 2 reps should feel
+          hard, not impossible.
         </p>
+        {restReasonNote(ageBracket) && <p className="mt-1 text-sm text-muted">{restReasonNote(ageBracket)}</p>}
+        {warmupNote(ageBracket) && (
+          <p className="mt-2 rounded-xl bg-soft p-3 text-sm">
+            <b>Before you start:</b> {warmupNote(ageBracket)}
+          </p>
+        )}
         <div className="mt-3">
           <ProgressBar pct={(done / total) * 100} />
         </div>
@@ -211,6 +217,7 @@ export default function Workout() {
                 </p>
                 <p className="mt-1 text-sm text-muted">
                   <b>Avoid:</b> {e.avoid} <b>Start:</b> {e.start}
+                  {startWeightNote(ageBracket) && ` ${startWeightNote(ageBracket)}`}
                 </p>
                 <button
                   type="button"
@@ -252,7 +259,7 @@ export default function Workout() {
                                 pulseTimer.current = window.setTimeout(() => setPulse(null), 650)
                                 showToast('New best!')
                               } else {
-                                showToast(`Set ${si + 1} logged. Rest ${g.rest}s.`)
+                                showToast(`Set ${si + 1} logged. Rest ${restSeconds}s.`)
                               }
                             }
                             logSet(ix, si)

@@ -20,9 +20,9 @@ describe('findLastLog / defaultSetsFor', () => {
     expect(sets.every((s) => s.completedAt === null)).toBe(true)
   })
 
-  it('falls back to the goal target reps with a blank weight on a true first time', () => {
+  it('falls back to the per-set rep target (heavier/lower-rep per set) with a blank weight on a true first time', () => {
     const sets = defaultSetsFor('leg_press', 'muscle', [], 3)
-    expect(sets.every((s) => s.reps === 8)).toBe(true) // GOALS.muscle.reps = "8–12"
+    expect(sets.map((s) => s.reps)).toEqual([12, 10, 8]) // Build muscle's 3-set target ladder
     expect(sets.every((s) => s.weight === null)).toBe(true)
   })
 

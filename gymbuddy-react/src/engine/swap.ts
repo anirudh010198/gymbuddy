@@ -1,7 +1,8 @@
 import { BY_ID, EXERCISES } from './exercises'
 import { TEMPLATES } from './templates'
 import { today } from './dates'
-import type { ActiveWorkout, Equip, Exercise, Pattern, Reason, WorkoutItem } from './types'
+import { isSupportedEquip } from './age'
+import type { ActiveWorkout, Equip, Exercise, Group, Pattern, Reason, SessionLength, WorkoutItem } from './types'
 
 /** Exercises usable with the given equipment. Bodyweight is always available. */
 export function availableExercises(equip: Equip[]): Exercise[] {
@@ -33,6 +34,93 @@ export function buildWorkout(dayIndex: number, equip: Equip[]): ActiveWorkout {
     swaps: [],
   }))
   return { date: today(), dayIndex, items, startedAt: Date.now() }
+}
+
+/** The patterns that make up each muscle group — a single-group day (Quick)
+ *  picks exactly one exercise per pattern here, which is why "no duplicate
+ *  patterns" is achievable for Quick (3 patterns, 3 exercises) but not for
+ *  Full (6 exercises drawn from the same 3 patterns; see buildGroupWorkout). */
+export const GROUP_PATTERNS: Record<Group, Pattern[]> = {
+  legs: ['squat', 'hinge', 'lunge'],
+  push: ['hpush', 'vpush', 'arms'],
+  pull: ['vpull', 'hpull', 'arms'],
+}
+
+const FULL_SESSION_SIZE = 6
+
+function sortForAge(pool: Exercise[], preferSupported: boolean): Exercise[] {
+  if (!preferSupported) return pool
+  // Stable sort: supported (machine/cable) options first, ties broken by
+  // original library order — the free-weight option is still one Swap away.
+  return [...pool].sort((a, b) => Number(isSupportedEquip(b.equip)) - Number(isSupportedEquip(a.equip)))
+}
+
+/** Interleaves exercises across their patterns (round-robin) so a "pick N"
+ *  selection maximizes pattern variety before it's forced to repeat one. */
+function roundRobinByPattern(pool: Exercise[]): Exercise[] {
+  const byPattern = new Map<Pattern, Exercise[]>()
+  for (const e of pool) {
+    const list = byPattern.get(e.pattern) ?? []
+    list.push(e)
+    byPattern.set(e.pattern, list)
+  }
+  const buckets = [...byPattern.values()]
+  const out: Exercise[] = []
+  let i = 0
+  while (out.length < pool.length) {
+    for (const bucket of buckets) {
+      if (i < bucket.length) out.push(bucket[i])
+    }
+    i++
+  }
+  return out
+}
+
+const GROUP_ORDER: Group[] = ['legs', 'push', 'pull']
+
+/** "Remember the last choice and suggest the next logical one" — a fixed
+ *  legs -> push -> pull -> legs rotation. Also what "Pick for me" applies
+ *  automatically, without making the user read the day-select options. */
+export function suggestNextGroup(lastGroup: Group | null | undefined): Group {
+  if (!lastGroup) return 'legs'
+  return GROUP_ORDER[(GROUP_ORDER.indexOf(lastGroup) + 1) % GROUP_ORDER.length]
+}
+
+export interface GroupWorkoutPick {
+  pattern: Pattern
+  id: string
+  role: Exercise['role']
+}
+
+/**
+ * Builds one day's exercise picks for a single chosen muscle group.
+ * Quick: one exercise per pattern in the group (main-preferred), so 3
+ * patterns -> 3 exercises with no pattern repeated.
+ * Full: up to 6 — every group has exactly 8 exercises (5-6 main, 2-3
+ * accessory), so mains come first (round-robined across patterns for
+ * variety), then accessories fill any remaining slots.
+ */
+export function buildGroupWorkout(group: Group, length: SessionLength, equip: Equip[], preferSupportedEquip = false): GroupWorkoutPick[] {
+  const patterns = GROUP_PATTERNS[group]
+  const groupPool = sortForAge(
+    availableExercises(equip).filter((e) => e.group === group),
+    preferSupportedEquip,
+  )
+
+  if (length === 'quick') {
+    return patterns.map((pattern) => {
+      const pool = groupPool.filter((e) => e.pattern === pattern)
+      const mains = pool.filter((e) => e.role === 'main')
+      const pick = mains[0] ?? pool[0] ?? EXERCISES.find((e) => e.pattern === pattern && e.equip === 'bodyweight')
+      if (!pick) throw new Error(`No exercise available for pattern "${pattern}"`)
+      return { pattern, id: pick.id, role: pick.role }
+    })
+  }
+
+  const mains = roundRobinByPattern(groupPool.filter((e) => e.role === 'main'))
+  const accessories = roundRobinByPattern(groupPool.filter((e) => e.role === 'accessory'))
+  const picks = [...mains, ...accessories].slice(0, FULL_SESSION_SIZE)
+  return picks.map((e) => ({ pattern: e.pattern, id: e.id, role: e.role }))
 }
 
 function reasonScore(e: Exercise, cur: Exercise, reason: Reason): number {

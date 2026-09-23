@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useGym } from '../../store/GymStoreContext'
 import { EQUIP_OPTIONS, GOALS } from '../../engine/goals'
+import { AGE_BRACKET_LABEL, ageBracketFor, restReasonNote, warmupNote } from '../../engine/age'
 import type { Equip, GoalKey } from '../../engine/types'
 import { Wrap, Card, Chip, GhostButton } from '../components/ui'
+import { deleteContactProfile, getContactProfile } from '../lib/contactProfile'
 
 export default function Settings() {
   const profile = useGym((s) => s.profile)!
@@ -12,6 +14,27 @@ export default function Settings() {
   const updateProfile = useGym((s) => s.updateProfile)
   const resetData = useGym((s) => s.resetData)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [ageInput, setAgeInput] = useState(profile.age != null ? String(profile.age) : '')
+  const [hasContactProfile, setHasContactProfile] = useState(() => getContactProfile() != null)
+  const [detailsDeleted, setDetailsDeleted] = useState(false)
+
+  const bracket = ageBracketFor(profile.age)
+
+  function saveAge() {
+    const trimmed = ageInput.trim()
+    updateProfile({ age: trimmed === '' ? null : Number(trimmed) })
+  }
+
+  function clearAge() {
+    setAgeInput('')
+    updateProfile({ age: null })
+  }
+
+  function deleteDetails() {
+    deleteContactProfile()
+    setHasContactProfile(false)
+    setDetailsDeleted(true)
+  }
 
   function toggleEquip(k: Equip) {
     const has = profile.equip.includes(k)
@@ -74,6 +97,39 @@ export default function Settings() {
       </div>
 
       <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
+        Your age
+      </h2>
+      <Card className="p-4">
+        <p className="text-sm text-muted">Optional. Helps us adjust warm-up and recovery — never used for anything else, and you can clear it any time.</p>
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="number"
+            min={13}
+            max={100}
+            inputMode="numeric"
+            className="w-24 rounded-xl border-2 border-line bg-card p-2.5 text-ink outline-none focus-visible:border-plate"
+            value={ageInput}
+            onChange={(e) => setAgeInput(e.target.value)}
+            onBlur={saveAge}
+            aria-label="Your age"
+          />
+          {profile.age != null && (
+            <GhostButton onClick={clearAge} className="!min-h-0 w-auto px-4 py-2 text-sm">
+              Clear
+            </GhostButton>
+          )}
+        </div>
+        {bracket && (
+          <div className="mt-3 rounded-xl bg-plate/10 p-3 text-sm">
+            <p className="font-semibold">Age group: {AGE_BRACKET_LABEL[bracket]}</p>
+            {restReasonNote(bracket) && <p className="mt-1 text-muted">{restReasonNote(bracket)}</p>}
+            {warmupNote(bracket) && <p className="mt-1 text-muted">{warmupNote(bracket)}</p>}
+            {bracket === '40plus' && <p className="mt-1 text-muted">We'll lean toward machine/cable exercises and a lighter starting weight where there's a choice.</p>}
+          </div>
+        )}
+      </Card>
+
+      <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
         Reference
       </h2>
       <Card className="p-4">
@@ -91,6 +147,26 @@ export default function Settings() {
         <GhostButton className="mt-3" onClick={exportData}>
           Export data as JSON
         </GhostButton>
+      </Card>
+
+      <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
+        Your details
+      </h2>
+      <Card className="p-4">
+        <p className="text-sm text-muted">
+          Your name, age and contact info from the "save my progress" card, if you filled it in.{' '}
+          <Link to="/privacy" className="underline decoration-line underline-offset-2">
+            Read our privacy page
+          </Link>
+          .
+        </p>
+        {hasContactProfile ? (
+          <GhostButton className="mt-3" onClick={deleteDetails}>
+            Delete my details
+          </GhostButton>
+        ) : (
+          <p className="mt-3 text-sm font-semibold text-muted">{detailsDeleted ? 'Deleted.' : 'Nothing saved.'}</p>
+        )}
       </Card>
 
       <div className={`mt-3 rounded-card border-2 bg-card p-4 ${confirmReset ? 'border-warn' : 'border-line'}`}>

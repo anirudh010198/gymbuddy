@@ -1,12 +1,12 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, type PersistStorage, type StorageValue } from 'zustand/middleware'
 import { BY_ID } from '../engine/exercises'
-import { SETS } from '../engine/goals'
+import { SETS, FULL_ACCESSORY_SETS } from '../engine/goals'
 import { today } from '../engine/dates'
-import { buildWorkout, swapCandidates } from '../engine/swap'
+import { buildGroupWorkout, swapCandidates, type GroupWorkoutPick } from '../engine/swap'
 import { appendEvent } from '../engine/track'
 import { defaultSetsFor, goalTargetReps, totalReps, totalVolume, type SetState } from '../engine/progress'
-import type { Equip, Exercise, GoalKey, HistoryEntry, Pattern, Profile, Reason, Swap, TrackEvent } from '../engine/types'
+import type { Equip, Exercise, GoalKey, Group, HistoryEntry, Pattern, Profile, Reason, SessionLength, Swap, TrackEvent } from '../engine/types'
 
 export type { SetState }
 
@@ -25,6 +25,8 @@ export interface Active {
   items: ActiveItem[]
   startedAt: number
   finished?: boolean
+  group: Group
+  length: SessionLength
 }
 
 export type SwapOutcome = { ok: true; exercise: Exercise; reason: Reason } | { ok: false }
@@ -40,12 +42,15 @@ export interface GymState {
    *  screen without abandoning today's in-progress workout. */
   peekHome: boolean
 
-  completeOnboarding: (goal: GoalKey, equip: Equip[], target: number) => void
+  completeOnboarding: (goal: GoalKey, equip: Equip[], target: number, age?: number | null) => void
   changeGoal: () => void
-  updateProfile: (patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target'>>) => void
+  updateProfile: (patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target' | 'age'>>) => void
   resetData: () => void
   setPeekHome: (v: boolean) => void
-  startWorkout: () => void
+  /** Builds and starts today's workout for one chosen muscle group and
+   *  session length — there's no more parameterless auto-build; the day
+   *  is always an explicit (if one-tap) choice. */
+  startWorkout: (group: Group, length: SessionLength) => void
   logSet: (itemIndex: number, setIndex: number) => void
   setSetValues: (itemIndex: number, setIndex: number, patch: { reps?: number; weight?: number | null }) => void
   /** Ranked candidates for the "Change exercise" list — pure, no mutation, but
@@ -58,8 +63,19 @@ export interface GymState {
   trackEvent: (type: string, data?: Record<string, unknown>) => void
 }
 
-function freshItems(built: { pattern: Pattern; id: string; swaps: Swap[] }[], goal: GoalKey, history: HistoryEntry[]): ActiveItem[] {
-  return built.map((it) => ({ ...it, sets: defaultSetsFor(it.id, goal, history, SETS), tipShown: false }))
+function setsCountFor(pick: Pick<GroupWorkoutPick, 'role'>, length: SessionLength): number {
+  if (length === 'quick') return SETS
+  return pick.role === 'main' ? SETS : FULL_ACCESSORY_SETS
+}
+
+function itemsFromPicks(picks: GroupWorkoutPick[], length: SessionLength, goal: GoalKey, history: HistoryEntry[]): ActiveItem[] {
+  return picks.map((p) => ({
+    pattern: p.pattern,
+    id: p.id,
+    swaps: [],
+    sets: defaultSetsFor(p.id, goal, history, setsCountFor(p, length)),
+    tipShown: false,
+  }))
 }
 
 /** Adapts the pre-migration vanilla-version flat shape {profile,history,active,events} into
@@ -89,11 +105,14 @@ function migrateRaw(raw: unknown): StorageValue<Partial<GymState>> | null {
 /** Old active.items used {slot, done: boolean[]}; the step-3 shape used {pattern, done};
  *  the current shape uses {pattern, sets}. Converts either legacy shape forward, and
  *  drops the active workout (forcing a fresh one) if it references an exercise id that
- *  no longer exists, rather than crashing on lookup. */
+ *  no longer exists, rather than crashing on lookup. Also drops it if it predates the
+ *  single-group day model (no `group`/`length`) — safer than guessing which group a
+ *  mixed-pattern old-style workout was "for". */
 function sanitizeActive(raw: unknown, goal: GoalKey | undefined): Active | null {
   if (!raw || typeof raw !== 'object') return null
   const a = raw as Record<string, unknown>
   if (!Array.isArray(a.items)) return null
+  if (typeof a.group !== 'string' || typeof a.length !== 'string') return null
   const target = goalTargetReps(goal ?? 'fit')
   const items: ActiveItem[] = (a.items as Record<string, unknown>[]).map((it) => {
     let sets: SetState[]
@@ -123,6 +142,8 @@ function sanitizeActive(raw: unknown, goal: GoalKey | undefined): Active | null 
     items,
     startedAt: (a.startedAt as number) ?? Date.now(),
     finished: a.finished as boolean | undefined,
+    group: a.group as Group,
+    length: a.length as SessionLength,
   }
 }
 
@@ -226,11 +247,12 @@ export function createGymStore(
 
         trackEvent: (type, data) => set((s) => ({ events: appendEvent(s.events, type, data) })),
 
-        completeOnboarding: (goal, equip, target) => {
-          const profile: Profile = { goal, equip, target, created: today() }
+        completeOnboarding: (goal, equip, target, age) => {
+          const profile: Profile = { goal, equip, target, created: today(), age: age ?? null, lastGroup: null }
           set({ profile })
-          get().trackEvent('onboard_done', { equip, target })
-          get().startWorkout()
+          get().trackEvent('onboard_done', { equip, target, age: age ?? undefined })
+          // No more auto-starting a workout here — the day/length choice
+          // (DaySelectSheet, from Home) is always an explicit step now.
         },
 
         changeGoal: () => set({ profile: null, active: null }),
@@ -240,20 +262,25 @@ export function createGymStore(
         resetData: () =>
           set({ profile: null, history: [], active: null, events: [], lastDone: null, showSummary: false, peekHome: false }),
 
-        startWorkout: () => {
+        startWorkout: (group, length) => {
           const profile = get().profile
           if (!profile) return
           set({ peekHome: false })
           const existing = get().active
           if (existing && existing.date === today() && !existing.finished) return
           const dayIndex = get().history.length
-          const built = buildWorkout(dayIndex, profile.equip)
+          const picks = buildGroupWorkout(group, length, profile.equip)
           const active: Active = {
-            ...built,
-            items: freshItems(built.items, profile.goal, get().history),
+            date: today(),
+            dayIndex,
+            startedAt: Date.now(),
+            group,
+            length,
+            items: itemsFromPicks(picks, length, profile.goal, get().history),
           }
           set({ active })
-          get().trackEvent('workout_generated', { dayIndex })
+          get().trackEvent('workout_generated', { dayIndex, group, length })
+          get().trackEvent('session_length', { length })
         },
 
         logSet: (itemIndex, setIndex) => {
@@ -316,7 +343,10 @@ export function createGymStore(
               ? {
                   ...it,
                   id: next.id,
-                  sets: defaultSetsFor(next.id, profile.goal, get().history, SETS),
+                  // Keep this slot's original intended set count (Quick vs
+                  // Full/main-vs-accessory was decided at build time) rather
+                  // than recomputing it from the new exercise's own role.
+                  sets: defaultSetsFor(next.id, profile.goal, get().history, it.sets.length),
                   tipShown: false,
                   swaps: [...it.swaps, { from: it.id, to: next.id, reason }],
                 }
@@ -329,7 +359,8 @@ export function createGymStore(
 
         finishWorkout: () => {
           const active = get().active
-          if (!active) return
+          const profile = get().profile
+          if (!active || !profile) return
           const items = active.items.map((i) => ({ id: i.id, log: i.sets, swaps: i.swaps }))
           const sets = items.reduce((a, it) => a + it.log.filter((s) => s.completedAt != null).length, 0)
           const reps = items.reduce((a, it) => a + totalReps(it.log), 0)
@@ -350,8 +381,9 @@ export function createGymStore(
             active: { ...active, finished: true },
             lastDone: today(),
             showSummary: true,
+            profile: { ...profile, lastGroup: active.group },
           }))
-          get().trackEvent('workout_done', { sets, swaps: active.items.reduce((a, i) => a + i.swaps.length, 0) })
+          get().trackEvent('workout_done', { sets, swaps: active.items.reduce((a, i) => a + i.swaps.length, 0), group: active.group })
         },
 
         setFeel: (feel) => {
