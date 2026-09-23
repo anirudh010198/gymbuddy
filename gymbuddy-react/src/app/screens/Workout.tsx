@@ -10,11 +10,12 @@ import { reportBusyNow, forecastForSession, statusFor } from '../../engine/busyM
 import { useBusySource } from '../../store/BusySourceContext'
 import { findLastLog, formatLastTime, isPB } from '../../engine/progress'
 import { ageBracketFor, restSecondsFor, restReasonNote, startWeightNote, effortStyleForAge, EFFORT_STYLES, EFFORT_LEVEL_ORDER } from '../../engine/age'
-import type { Exercise, Group, Reason } from '../../engine/types'
+import type { Exercise, Reason } from '../../engine/types'
 import { Wrap, Tag, PrimaryButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
 import Plate from '../components/Plate'
-import MuscleMap from '../components/MuscleMap'
+import SessionMuscleMap from '../components/SessionMuscleMap'
+import { musclesForGroups, muscleSummaryLine } from '../../engine/muscleMap'
 import SwapSheet from '../components/SwapSheet'
 import ChangeExerciseSheet from '../components/ChangeExerciseSheet'
 import FormGuide from '../components/FormGuide'
@@ -92,28 +93,11 @@ export default function Workout() {
   const total = active.items.reduce((a, it) => a + it.sets.length, 0)
   const done = active.items.reduce((a, i) => a + i.sets.filter((s) => s.completedAt != null).length, 0)
 
-  // Progress (and scroll target) is computed per item's own exercise group,
-  // not the session's nominal group — a regular single-group day only ever
-  // has items in one group (identical to the old behaviour), while a mixed
-  // "Build my own" day gets an accurate per-region breakdown instead of
-  // matching nothing.
-  function itemsForGroup(group: Group) {
-    return active.items.filter((it) => BY_ID[it.id].group === group)
-  }
-
-  function progressForGroup(group: Group) {
-    const items = itemsForGroup(group)
-    if (!items.length) return 0
-    const t = items.reduce((a, it) => a + it.sets.length, 0)
-    const d = items.reduce((a, it) => a + it.sets.filter((s) => s.completedAt != null).length, 0)
-    return d / Math.max(1, t)
-  }
-
-  function scrollToGroup(group: Group) {
-    const idx = active.items.findIndex((it) => BY_ID[it.id].group === group)
-    if (idx === -1) return
-    cardRefs.current[idx]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
-  }
+  // The groups actually present in this session's exercises — a regular
+  // single-group day has just one, a "Build my own" mixed day whatever mix
+  // was actually picked (never a guess, just what's really there).
+  const groupsInSession = [...new Set(active.items.map((it) => BY_ID[it.id].group))]
+  const sessionMuscles = musclesForGroups(groupsInSession)
 
   function handleReason(reason: Reason) {
     if (swapIndex === null) return
@@ -218,6 +202,10 @@ export default function Workout() {
           {active.length === 'custom' ? 'Custom' : active.length === 'quick' ? 'Quick' : 'Full'} session · Rest {restSeconds}s
           between sets. Last 2 reps should feel hard, not impossible.
         </p>
+        <div className="mt-4">
+          <SessionMuscleMap muscles={sessionMuscles} progress={total ? done / total : 0} />
+        </div>
+        <p className="mt-2 text-center text-sm font-semibold text-muted">{muscleSummaryLine(groupsInSession)}</p>
         {restReasonNote(ageBracket) && <p className="mt-1 text-sm text-muted">{restReasonNote(ageBracket)}</p>}
         {belowTarget && (
           <p className="mt-2 rounded-xl bg-soft p-3 text-sm">
@@ -241,14 +229,6 @@ export default function Workout() {
         {active.busyReorderNote && <p className="mt-2 text-sm text-muted">{active.busyReorderNote}</p>}
         <div className="mt-3">
           <ProgressBar pct={(done / total) * 100} />
-        </div>
-        <div className="mt-4">
-          <MuscleMap
-            legsProgress={progressForGroup('legs')}
-            pushProgress={progressForGroup('push')}
-            pullProgress={progressForGroup('pull')}
-            onTap={scrollToGroup}
-          />
         </div>
         <div className="mt-5 grid gap-4">
           {active.items.map((it, ix) => {

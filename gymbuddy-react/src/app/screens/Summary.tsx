@@ -8,8 +8,10 @@ import { GROUP_LABEL } from '../../engine/templates'
 import { buildGroupWorkout, suggestNextGroup } from '../../engine/swap'
 import { compareToLast, exerciseHasPB, findLastLog, totalReps } from '../../engine/progress'
 import { canNudgeToday } from '../../engine/buddy'
+import { musclesForGroups, muscleSummaryLine } from '../../engine/muscleMap'
 import { Wrap, Card, Chip, PrimaryButton, GhostButton, GhostLink, Dock } from '../components/ui'
 import WeekDots from '../components/WeekDots'
+import SessionMuscleMap from '../components/SessionMuscleMap'
 import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
 import ProfileCaptureCard from '../components/ProfileCaptureCard'
 import { buildShareImage } from '../lib/shareCard'
@@ -49,6 +51,16 @@ export default function Summary() {
   const msg = wc >= target ? "Weekly target hit. That's the whole game in month one." : `${target - wc} more this week to keep your streak.`
   const tips = last.tipsUnlocked ?? []
 
+  // Same "what did this session actually train" logic as the workout screen
+  // — real groups from the exercises trained, never a guess. A mixed/absent
+  // group (old history predating single-group days, or a "Build my own"
+  // session) falls back to each item's own exercise group.
+  const summaryGroups =
+    last.group && last.group !== 'mixed' ? [last.group] : [...new Set(last.items.map((it) => BY_ID[it.id].group))]
+  const summaryMuscles = musclesForGroups(summaryGroups)
+  const plannedSets = last.items.reduce((a, it) => a + it.log.length, 0)
+  const summaryProgress = plannedSets ? last.sets / plannedSets : 1
+
   // finishWorkout already updated profile.lastGroup to the group just
   // trained, so this is genuinely the suggestion for the *next* session.
   const nextGroup = suggestNextGroup(profile.lastGroup)
@@ -86,6 +98,10 @@ export default function Summary() {
       <div className="font-display font-extrabold leading-[0.95]" style={{ fontSize: '3.6rem' }}>
         You showed up.
       </div>
+      <div className="mt-4">
+        <SessionMuscleMap muscles={summaryMuscles} progress={summaryProgress} />
+      </div>
+      <p className="mt-2 text-center text-sm font-semibold text-muted">{muscleSummaryLine(summaryGroups, true)}</p>
       <div className="mt-6 grid grid-cols-3 gap-3">
         <Card className="p-3 text-center">
           <div className="font-display font-extrabold" style={{ fontSize: '2rem' }}>
