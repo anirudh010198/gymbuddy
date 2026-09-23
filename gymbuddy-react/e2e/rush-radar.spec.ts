@@ -27,10 +27,10 @@ test('all 4 bottom-nav tabs are visible and tappable at 360px, and the Rush Rada
     await expect(page.getByRole('button', { name: gym })).toBeVisible()
   }
   await page.getByRole('button', { name: 'Budget gym' }).click()
-  await expect(page.getByText('Sample gym · Budget')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Budget gym' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByText(/Busy right now|Quiet right now/)).toBeVisible()
   await expect(page.getByRole('table')).toBeVisible()
-  await expect(page.getByText(/illustrative|sample reports/i)).toBeVisible()
+  await expect(page.getByText(/illustrative sample pattern/i)).toBeVisible()
 
   // Settings no longer has its own gym section.
   await page.getByRole('button', { name: 'Settings', exact: true }).click()

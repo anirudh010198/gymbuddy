@@ -16,11 +16,14 @@ export default function RushRadarHeatmap({
   gymName,
   gymCode,
   reports,
+  sampleData = false,
   openAppLinkIfSignedOut = false,
 }: {
   gymName?: string | null
   gymCode?: string | null
   reports: BusyReport[]
+  /** True for the explicitly synthetic sample-location dataset. */
+  sampleData?: boolean
   /** Only the standalone page needs this — a visitor with no gym set yet
    *  has no in-app tab to point to instead. */
   openAppLinkIfSignedOut?: boolean
@@ -61,7 +64,7 @@ export default function RushRadarHeatmap({
   return (
     <>
       <p className="text-sm font-semibold text-muted">
-        {gymName} — based on {reports.length} report{reports.length === 1 ? '' : 's'} from this device.
+        {gymName} — {sampleData ? 'illustrative sample pattern' : `based on ${reports.length} report${reports.length === 1 ? '' : 's'} from this device`}.
       </p>
       <div className="mt-4 overflow-x-auto">
         <table className="w-full border-separate" style={{ borderSpacing: 2 }}>

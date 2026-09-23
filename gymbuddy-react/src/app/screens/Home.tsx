@@ -76,7 +76,7 @@ export default function Home() {
   return (
     <Wrap>
       <div className="mt-2 flex items-center justify-between">
-        <div className="font-display text-2xl font-extrabold">Today</div>
+        <h1 className="font-display text-2xl font-extrabold">Today</h1>
         <button type="button" className="text-sm font-semibold text-muted" onClick={changeGoal}>
           Change goal
         </button>

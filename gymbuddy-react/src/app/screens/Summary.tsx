@@ -191,7 +191,7 @@ export default function Summary() {
       <Card className="mt-4 p-4">
         <h2 className="font-display font-bold" style={{ fontSize: '1.2rem' }}>Personal bests</h2>
         {personalBests.length ? (
-          <ul className="mt-2 grid gap-1 text-sm">{personalBests.map((name) => <li key={name}>★ {name}</li>)}</ul>
+          <ul className="mt-2 grid gap-1 text-sm">{personalBests.map((name, index) => <li key={`${name}-${index}`}>★ {name}</li>)}</ul>
         ) : <p className="mt-1 text-sm text-muted">Keep logging to spot your next PB.</p>}
       </Card>
 

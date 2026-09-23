@@ -14,8 +14,9 @@ test('demo mode opens on Today with seeded data, never touches real data, and ex
   await expect(page.getByRole('button', { name: "Resume today's workout" })).toBeVisible()
 
   await page.getByRole('button', { name: 'Rush Radar', exact: true }).click()
-  await expect(page.getByText(/Right now at Iron Temple Fitness:/)).toBeVisible()
-  await expect(page.getByText(/usually busy/)).toBeVisible()
+  await expect(page.getByText('Iron Temple Fitness').first()).toBeVisible()
+  await expect(page.getByText(/Busy right now|Quiet right now/)).toBeVisible()
+  await expect(page.getByRole('table')).toBeVisible()
 
   await page.getByRole('button', { name: 'Go to Today' }).click()
 

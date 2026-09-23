@@ -47,6 +47,32 @@ test('the label opens a sheet with quick chips and number scrollers, and a chip 
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
+test('edited reps and weight persist in the active workout after reload', async ({ page }) => {
+  await onboardOnly(page)
+  await startWorkout(page)
+  const card = page.locator('section[aria-label]').first()
+  const label = card.getByRole('group', { name: 'Log sets' }).locator('button.underline').first()
+
+  await label.click()
+  await page.getByRole('button', { name: '+1 rep' }).click()
+  await label.click()
+  await page.getByRole('button', { name: '+2.5 kg' }).click()
+
+  const savedBeforeReload = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('gymbuddy.v1') ?? '{}').state
+    return state.active.items[0].sets[0]
+  })
+  expect(savedBeforeReload.reps).toBeGreaterThan(10)
+  expect(savedBeforeReload.weight).toBeGreaterThan(20)
+
+  await page.reload()
+  const savedAfterReload = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem('gymbuddy.v1') ?? '{}').state
+    return state.active.items[0].sets[0]
+  })
+  expect(savedAfterReload).toEqual(savedBeforeReload)
+})
+
 test('the set-logging sheet has no horizontal clipping at 360px', async ({ page }) => {
   await onboardOnly(page)
   await startWorkout(page)

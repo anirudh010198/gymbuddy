@@ -109,7 +109,7 @@ export default function RushRadar() {
       </Card>
 
       <div className="mt-4">
-        <RushRadarHeatmap gymName={profile.gymName} gymCode={profile.gymCode} reports={reports} />
+        <RushRadarHeatmap gymName={profile.gymName} gymCode={profile.gymCode} reports={reports} sampleData={selectedSample != null} />
       </div>
 
       <FindGymSheet

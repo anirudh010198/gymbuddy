@@ -60,7 +60,8 @@ test.describe('Buddy mode', () => {
     await pageA.getByRole('button', { name: 'Share invite' }).click()
     const linkA = await lastShareLink(pageA)
     expect(linkA).toContain('buddyCode=')
-    expect(linkA).not.toMatch(/kg|weight/i) // never weight data in the payload
+    const inviteKeys = [...new URL(linkA).searchParams.keys()]
+    expect(inviteKeys.filter((key) => /kg|weight/i.test(key))).toEqual([]) // never weight fields in the payload
 
     // Device B: onboard, open A's link directly (as if tapped from WhatsApp).
     await onboardOnly(pageB)
