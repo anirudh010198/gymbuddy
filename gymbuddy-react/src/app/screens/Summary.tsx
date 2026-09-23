@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useGym } from '../../store/GymStoreContext'
+import { useBuddySource } from '../../store/BuddySourceContext'
 import { streakWeeks, weekCount } from '../../engine/streak'
 import { today, weekStart } from '../../engine/dates'
 import { BY_ID } from '../../engine/exercises'
 import { GROUP_LABEL } from '../../engine/templates'
 import { buildGroupWorkout, suggestNextGroup } from '../../engine/swap'
 import { compareToLast, exerciseHasPB, findLastLog, totalReps } from '../../engine/progress'
+import { canNudgeToday } from '../../engine/buddy'
 import { Wrap, Card, Chip, PrimaryButton, GhostButton, GhostLink, Dock } from '../components/ui'
 import WeekDots from '../components/WeekDots'
 import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
 import ProfileCaptureCard from '../components/ProfileCaptureCard'
 import { buildShareImage } from '../lib/shareCard'
 import { isProfileCaptureDismissed } from '../lib/contactProfile'
+import { nudgeBuddy } from '../lib/buddyActions'
 
 const FEELS = ['Too easy', 'About right', 'Too hard'] as const
 
@@ -20,11 +23,16 @@ export default function Summary() {
   const profile = useGym((s) => s.profile)!
   const setFeel = useGym((s) => s.setFeel)
   const dismissSummary = useGym((s) => s.dismissSummary)
+  const trackEvent = useGym((s) => s.trackEvent)
+  const buddySource = useBuddySource()
   const [tipsOpen, setTipsOpen] = useState(false)
   const [preview, setPreview] = useState<SwapInfo | null>(null)
   const [canShare, setCanShare] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [profileCaptureDone, setProfileCaptureDone] = useState(() => isProfileCaptureDismissed())
+  const [buddy, setBuddy] = useState(() => buddySource.getBuddy())
+  const [nudging, setNudging] = useState(false)
+  const [nudged, setNudged] = useState(false)
 
   useEffect(() => {
     setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function')
@@ -45,6 +53,15 @@ export default function Summary() {
   // trained, so this is genuinely the suggestion for the *next* session.
   const nextGroup = suggestNextGroup(profile.lastGroup)
   const nextExercises = buildGroupWorkout(nextGroup, 'quick', profile.equip).map((p) => BY_ID[p.id])
+
+  async function handleNudge() {
+    if (!buddy) return
+    setNudging(true)
+    await nudgeBuddy(buddySource, buddy, trackEvent)
+    setBuddy(buddySource.getBuddy())
+    setNudging(false)
+    setNudged(true)
+  }
 
   async function handleShare() {
     setSharing(true)
@@ -124,6 +141,15 @@ export default function Summary() {
           )
         })}
       </Card>
+
+      {buddy && (
+        <Card className="mt-4 p-4">
+          <p className="text-sm text-muted">Keep {buddy.name} going too.</p>
+          <GhostButton className="mt-2" disabled={!canNudgeToday(buddy) || nudging} onClick={handleNudge}>
+            {nudged ? 'Nudge sent!' : nudging ? 'Sending…' : !canNudgeToday(buddy) ? 'Already nudged today' : `Nudge ${buddy.name}`}
+          </GhostButton>
+        </Card>
+      )}
 
       {tips.length > 0 && (
         <Card className="mt-4 p-4">

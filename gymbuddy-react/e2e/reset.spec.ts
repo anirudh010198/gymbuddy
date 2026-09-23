@@ -7,6 +7,15 @@ test('reset all data: confirm, clears everything, and the app is genuinely back 
   await expect(page.getByText('Workout 1 complete')).toBeVisible()
   await page.getByRole('button', { name: 'Done', exact: true }).click()
 
+  // Seed a paired buddy too — reset must sweep every gymbuddy.* key, not
+  // just the ones it happens to know about by name.
+  await page.evaluate(() => {
+    localStorage.setItem(
+      'gymbuddy.buddy',
+      JSON.stringify({ name: 'Priya', workoutsThisWeek: 1, weekTarget: 3, streak: 1, lastTrainedDate: null, code: 'ABCD23', pairedAt: Date.now() }),
+    )
+  })
+
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await page.getByRole('button', { name: 'Reset all data' }).click()
   await expect(page.getByText("This deletes your workouts, streaks and settings on this device. This can't be undone.")).toBeVisible()
@@ -22,4 +31,6 @@ test('reset all data: confirm, clears everything, and the app is genuinely back 
   // from scratch, with zero history — not a stale in-memory profile.
   await page.goto('/app')
   await expect(page.getByRole('button', { name: 'Get started' })).toBeVisible()
+  const buddy = await page.evaluate(() => localStorage.getItem('gymbuddy.buddy'))
+  expect(buddy).toBeNull()
 })

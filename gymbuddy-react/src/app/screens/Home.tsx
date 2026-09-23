@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useGym } from '../../store/GymStoreContext'
+import { useBuddySource } from '../../store/BuddySourceContext'
 import { streakWeeks, trainedToday, weekCount } from '../../engine/streak'
 import { today, weekStart } from '../../engine/dates'
 import { suggestNextGroup } from '../../engine/swap'
 import { GROUP_LABEL } from '../../engine/templates'
+import { parseInvitePayload } from '../../engine/buddy'
 import { Wrap, Card, PrimaryButton, GhostButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
 import WeekDots from '../components/WeekDots'
 import InstallHint from '../components/InstallHint'
 import DaySelectSheet from '../components/DaySelectSheet'
 import BuildWorkoutFlow from '../components/BuildWorkoutFlow'
+import BuddySheet from '../components/BuddySheet'
+import BuddyStrip from '../components/BuddyStrip'
+import { nudgeBuddy } from '../lib/buddyActions'
 
 export default function Home() {
   const profile = useGym((s) => s.profile)!
@@ -20,8 +26,26 @@ export default function Home() {
   const startCustomWorkout = useGym((s) => s.startCustomWorkout)
   const setPeekHome = useGym((s) => s.setPeekHome)
   const changeGoal = useGym((s) => s.changeGoal)
+  const trackEvent = useGym((s) => s.trackEvent)
+  const buddySource = useBuddySource()
   const [daySelectOpen, setDaySelectOpen] = useState(false)
   const [buildOpen, setBuildOpen] = useState(false)
+  const [buddySheetOpen, setBuddySheetOpen] = useState(false)
+  const [buddy, setBuddy] = useState(() => buddySource.getBuddy())
+  const [searchParams, setSearchParams] = useSearchParams()
+  const incomingInvite = parseInvitePayload(searchParams.toString())
+
+  // A shared invite link/message lands here (see engine/buddy.ts) — open
+  // straight into the accept step, no extra tap needed to find it.
+  useEffect(() => {
+    if (incomingInvite) setBuddySheetOpen(true)
+    // Only re-check when the raw query actually changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.toString()])
+
+  function refreshBuddy() {
+    setBuddy(buddySource.getBuddy())
+  }
 
   const wc = weekCount(history, weekStart(today()))
   const st = streakWeeks(history, profile.target)
@@ -103,6 +127,29 @@ export default function Home() {
         </Card>
       )}
       <InstallHint eligible={history.length > 0} />
+      {buddy ? (
+        <BuddyStrip
+          buddy={buddy}
+          myWeekCount={wc}
+          myTarget={profile.target}
+          onNudge={async () => {
+            await nudgeBuddy(buddySource, buddy, trackEvent)
+            refreshBuddy()
+          }}
+          onManage={() => setBuddySheetOpen(true)}
+        />
+      ) : (
+        <Card className="mt-4 p-4">
+          <p className="text-sm text-muted">A gym partner makes the hard days easier — 7 in 10 people say so.</p>
+          <button
+            type="button"
+            className="mt-1 text-sm font-semibold underline decoration-line underline-offset-2"
+            onClick={() => setBuddySheetOpen(true)}
+          >
+            Train with a buddy
+          </button>
+        </Card>
+      )}
       <p className="mt-6 text-sm text-muted">Your progress is saved on this phone only.</p>
       {!done && (
         <Dock raised>
@@ -138,6 +185,15 @@ export default function Home() {
           onClose={() => setBuildOpen(false)}
         />
       )}
+      <BuddySheet
+        open={buddySheetOpen}
+        incomingInvite={incomingInvite}
+        onIncomingHandled={() => setSearchParams({}, { replace: true })}
+        onClose={() => {
+          setBuddySheetOpen(false)
+          refreshBuddy()
+        }}
+      />
     </Wrap>
   )
 }

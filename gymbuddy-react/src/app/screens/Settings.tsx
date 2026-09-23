@@ -17,9 +17,11 @@ import { Wrap, Card, Chip, GhostButton } from '../components/ui'
 import { deleteContactProfile, getContactProfile } from '../lib/contactProfile'
 import { useAuthStore } from '../../lib/authStore'
 import { performHardReset } from '../../lib/hardReset'
+import { useBuddySource } from '../../store/BuddySourceContext'
 import SignInButtons from '../components/SignInButtons'
 import Toast from '../components/Toast'
 import FindGymSheet from '../components/FindGymSheet'
+import BuddySheet from '../components/BuddySheet'
 
 export default function Settings() {
   const profile = useGym((s) => s.profile)!
@@ -30,6 +32,7 @@ export default function Settings() {
   const user = useAuthStore((s) => s.user)
   const signOut = useAuthStore((s) => s.signOut)
   const deleteAccount = useAuthStore((s) => s.deleteAccount)
+  const buddySource = useBuddySource()
   const [confirmReset, setConfirmReset] = useState(false)
   const [resetting, setResetting] = useState(false)
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false)
@@ -40,6 +43,8 @@ export default function Settings() {
   const [detailsDeleted, setDetailsDeleted] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [findGymOpen, setFindGymOpen] = useState(false)
+  const [buddySheetOpen, setBuddySheetOpen] = useState(false)
+  const [buddy, setBuddy] = useState(() => buddySource.getBuddy())
 
   // Resetting the Zustand store alone left stale screens behind (other
   // localStorage keys untouched, a service worker that could still serve
@@ -167,6 +172,33 @@ export default function Settings() {
         ) : (
           <GhostButton className="mt-3" onClick={() => setFindGymOpen(true)}>
             Find my gym
+          </GhostButton>
+        )}
+      </Card>
+
+      <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
+        Buddy
+      </h2>
+      <Card className="p-4">
+        <p className="text-sm text-muted">
+          Pair with one training partner — you'll each see the other's weekly progress and streak, never weights or how
+          heavy either of you lifts.
+        </p>
+        {buddy ? (
+          <>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="font-semibold">{buddy.name}</span>
+              <span className="text-sm text-muted">
+                {buddy.workoutsThisWeek}/{buddy.weekTarget} this week
+              </span>
+            </div>
+            <GhostButton className="mt-3" onClick={() => setBuddySheetOpen(true)}>
+              Manage buddy
+            </GhostButton>
+          </>
+        ) : (
+          <GhostButton className="mt-3" onClick={() => setBuddySheetOpen(true)}>
+            Train with a buddy
           </GhostButton>
         )}
       </Card>
@@ -365,6 +397,13 @@ export default function Settings() {
           trackEvent('gym_located', { method })
         }}
         onClose={() => setFindGymOpen(false)}
+      />
+      <BuddySheet
+        open={buddySheetOpen}
+        onClose={() => {
+          setBuddySheetOpen(false)
+          setBuddy(buddySource.getBuddy())
+        }}
       />
     </Wrap>
   )

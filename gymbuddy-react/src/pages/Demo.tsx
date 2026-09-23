@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { createGymStore, createMemoryStorage } from '../store/useGymStore'
 import { GymStoreProvider } from '../store/GymStoreContext'
 import { BusySourceProvider } from '../store/BusySourceContext'
+import { BuddySourceProvider } from '../store/BuddySourceContext'
 import { createMemoryBusySource } from '../engine/busyMap'
-import { buildDemoSeed } from '../lib/demoSeed'
+import { createMemoryBuddySource } from '../engine/buddy'
+import { buildDemoSeed, buildDemoBuddy } from '../lib/demoSeed'
 import AppRoot from '../app/AppRoot'
 
 /** "See a 3-week-old account" — a full run of the real /app UI, backed by a
@@ -19,6 +21,7 @@ export default function Demo() {
     const seed = buildDemoSeed()
     return { source: createMemoryBusySource(seed.busyReports), seed }
   })
+  const [demoBuddySource] = useState(() => createMemoryBuddySource(buildDemoBuddy()))
   const [demoStore] = useState(() => {
     const store = createGymStore('gymbuddy.demo', createMemoryStorage(), demoBusySource.source)
     const seed = demoBusySource.seed
@@ -37,7 +40,9 @@ export default function Demo() {
   return (
     <GymStoreProvider store={demoStore}>
       <BusySourceProvider source={demoBusySource.source}>
-        <AppRoot demo />
+        <BuddySourceProvider source={demoBuddySource}>
+          <AppRoot demo />
+        </BuddySourceProvider>
       </BusySourceProvider>
     </GymStoreProvider>
   )

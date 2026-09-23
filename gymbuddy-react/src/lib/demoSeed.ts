@@ -4,6 +4,7 @@ import { BY_ID } from '../engine/exercises'
 import { ageBracketFor, effortStyleForAge } from '../engine/age'
 import { gymCodeFor } from '../engine/gym'
 import type { BusyReport } from '../engine/busyMap'
+import type { Buddy } from '../engine/buddy'
 import type { Equip, EffortLabel, Exercise, Group, HistoryEntry, HistoryItemEntry, Profile, SetEntry } from '../engine/types'
 import type { Active, ActiveItem } from '../store/useGymStore'
 
@@ -13,6 +14,22 @@ const EFFORT_CYCLE: EffortLabel[] = ['sigma', 'god', 'aura', 'casual']
 const DEMO_AGE = 27
 export const DEMO_GYM_NAME = 'Iron Temple Fitness'
 export const DEMO_GYM_CODE = gymCodeFor(DEMO_GYM_NAME, 0, 0)
+
+/** Gone a little quiet this week after a decent start — a realistic
+ *  "should we check on them?" moment, so judges see the 5-day inactivity
+ *  nudge prompt working, not just a static buddy card. */
+export function buildDemoBuddy(): Buddy {
+  return {
+    name: 'Priya',
+    workoutsThisWeek: 0,
+    weekTarget: 3,
+    streak: 1,
+    lastTrainedDate: addDays(today(), -6),
+    code: 'PRIYA7',
+    pairedAt: parseDate(addDays(today(), -14)).getTime(),
+    lastNudgeSentAt: null,
+  }
+}
 
 /** Everything computed relative to the real "today" (not a fixed date), so
  *  the demo always looks current no matter when someone opens it:

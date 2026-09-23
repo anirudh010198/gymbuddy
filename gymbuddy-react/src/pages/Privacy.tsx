@@ -84,6 +84,27 @@ export default function Privacy() {
         </p>
 
         <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
+          If you use "Train with a buddy"
+        </h2>
+        <p>
+          <b>What we collect:</b> the name you type in, plus your weekly workout count, weekly target, streak, and the date
+          of your last workout — never anything about a specific exercise, set, rep, or weight.
+        </p>
+        <p className="mt-2">
+          <b>What we save:</b> your paired buddy's name and that same snapshot of their progress, exactly what they chose to
+          share when they invited or replied to you.
+        </p>
+        <p className="mt-2">
+          <b>Where it goes:</b> there's no server for this yet, so that snapshot travels inside the invite link itself (via
+          whatever app you share it through — WhatsApp, Messages, etc.) — never sent to us. Because of that, your buddy's
+          progress on your screen is a snapshot from whenever you last paired or replied, not a live feed.
+        </p>
+        <p className="mt-2">
+          <b>How to have it deleted:</b> open Settings → Buddy → "Manage buddy" → "Unpair", any time, from either side —
+          nothing else is shared afterward. "Reset all data" removes it too.
+        </p>
+
+        <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
           Either way
         </h2>
         <p>
