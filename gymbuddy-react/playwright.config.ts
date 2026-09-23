@@ -25,5 +25,13 @@ export default defineConfig({
       name: 'mobile-360',
       use: { ...devices['Pixel 5'], viewport: { width: 360, height: 740 } },
     },
+    {
+      name: 'desktop',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['iPhone 13'], viewport: { width: 390, height: 844 } },
+    },
   ],
 })
