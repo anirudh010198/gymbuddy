@@ -120,9 +120,26 @@
 
 body {
   margin: 0;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 88% -8%, rgb(var(--red-rgb) / 0.13), transparent 42%),
+    radial-gradient(ellipse at 0% 48%, rgb(var(--red-rgb) / 0.045), transparent 56%),
+    linear-gradient(155deg, rgb(var(--card-rgb) / 0.14), transparent 45%);
+  background-attachment: fixed;
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Fine print-like grain is a tiny inline texture: no network request, asset
+   download, or layout layer. The red pools stay subtle behind the cards. */
+body::before {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
 }
 
 button {

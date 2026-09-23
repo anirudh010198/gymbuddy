@@ -7,7 +7,7 @@ export function Wrap({ children, wide = false }: { children: ReactNode; wide?: b
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-card border border-line bg-card ${className}`}>{children}</div>
+  return <div className={`rounded-card border border-line bg-card shadow-[0_12px_32px_rgba(0,0,0,0.18)] ${className}`}>{children}</div>
 }
 
 export function Tag({ children }: { children: ReactNode }) {
