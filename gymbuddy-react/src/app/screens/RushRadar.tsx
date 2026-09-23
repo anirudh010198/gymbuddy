@@ -6,6 +6,7 @@ import { EQUIP_LABEL } from '../../engine/equip'
 import { Wrap, Card, GhostButton } from '../components/ui'
 import FindGymSheet from '../components/FindGymSheet'
 import RushRadarHeatmap from '../components/RushRadarHeatmap'
+import { reportsForSampleGym, SAMPLE_GYMS } from '../../engine/sampleGyms'
 
 /** Everything gym-related lives here, not scattered across Settings and
  *  Today — the current gym (with change/find), a live busy-now indicator,
@@ -19,7 +20,8 @@ export default function RushRadar() {
   const busySource = useBusySource()
   const [findGymOpen, setFindGymOpen] = useState(false)
 
-  const reports = profile.gymCode ? busySource.all(profile.gymCode) : []
+  const selectedSample = SAMPLE_GYMS.find((gym) => gym.code === profile.gymCode)
+  const reports = selectedSample ? reportsForSampleGym(selectedSample) : profile.gymCode ? busySource.all(profile.gymCode) : []
   const status = profile.gymCode ? gymStatusNow(reports) : null
 
   return (
@@ -72,6 +74,23 @@ export default function RushRadar() {
       </Card>
 
       <Card className="mt-4 p-4">
+        <div className="font-display font-bold" style={{ fontSize: '1.2rem' }}>Explore sample gyms</div>
+        <p className="mt-1 text-sm text-muted">Illustrative busy and free patterns. These are sample reports, not live crowd data.</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {SAMPLE_GYMS.map((gym) => (
+            <GhostButton
+              key={gym.id}
+              aria-pressed={profile.gymCode === gym.code}
+              className={`!min-h-[48px] px-2 py-2 text-sm ${profile.gymCode === gym.code ? 'border-plate' : ''}`}
+              onClick={() => updateProfile({ gymName: gym.name, gymCode: gym.code })}
+            >
+              {gym.kind}
+            </GhostButton>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="mt-4 p-4">
         <div className="text-sm font-semibold text-muted">Your equipment</div>
         <div className="mt-2 flex flex-wrap gap-2">
           {profile.equip.map((e) => (
@@ -104,4 +123,3 @@ export default function RushRadar() {
     </Wrap>
   )
 }
-

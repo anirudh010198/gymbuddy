@@ -23,6 +23,15 @@ test('all 4 bottom-nav tabs are visible and tappable at 360px, and the Rush Rada
   // Equipment stays editable only in Settings, not duplicated here.
   await expect(page.getByRole('button', { name: 'Change in Settings' })).toBeVisible()
 
+  for (const gym of ['Budget gym', 'Premium gym', 'Society gym', '24-hour gym']) {
+    await expect(page.getByRole('button', { name: gym })).toBeVisible()
+  }
+  await page.getByRole('button', { name: 'Budget gym' }).click()
+  await expect(page.getByText('Sample gym · Budget')).toBeVisible()
+  await expect(page.getByText(/Busy right now|Quiet right now/)).toBeVisible()
+  await expect(page.getByRole('table')).toBeVisible()
+  await expect(page.getByText(/illustrative|sample reports/i)).toBeVisible()
+
   // Settings no longer has its own gym section.
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Your gym' })).toHaveCount(0)
