@@ -50,7 +50,7 @@ export default function SiteHeader({ showFindGym = false }: { showFindGym?: bool
             onClick={() => setFindGymOpen(true)}
             className="hidden text-sm font-semibold text-muted hover:text-ink sm:inline"
           >
-            {profile?.gymName ? profile.gymName : 'Find your gym'}
+            {profile?.gymName ? profile.gymName : 'Rush Radar'}
           </button>
         )}
         <Link to="/exercises" className="text-sm font-semibold text-muted hover:text-ink">

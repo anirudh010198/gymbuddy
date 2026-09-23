@@ -57,7 +57,7 @@ export type EffortLabel = 'casual' | 'sigma' | 'god' | 'aura'
  *  four levels and their stored keys never change, only the label+emoji. */
 export type EffortStyle = 'genz' | 'balanced' | 'classic'
 
-export type TabKey = 'today' | 'history' | 'settings'
+export type TabKey = 'today' | 'rush' | 'history' | 'settings'
 
 export interface CustomWorkoutPick {
   id: string

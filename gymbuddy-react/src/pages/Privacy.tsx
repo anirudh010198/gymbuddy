@@ -62,7 +62,7 @@ export default function Privacy() {
         </p>
 
         <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
-          If you use "Find my gym"
+          If you use Rush Radar
         </h2>
         <p>
           <b>What we collect:</b> if you tap "Use my location", your device's GPS coordinates are sent once, directly to
@@ -79,8 +79,8 @@ export default function Privacy() {
           swaps. Entirely optional — the app works exactly the same without it.
         </p>
         <p className="mt-2">
-          <b>How to have it deleted:</b> open Settings → Your gym → "Clear", or use "Reset all data" to remove everything at
-          once.
+          <b>How to have it deleted:</b> open the Rush Radar tab → "Clear", or use "Reset all data" in Settings to remove
+          everything at once.
         </p>
 
         <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>

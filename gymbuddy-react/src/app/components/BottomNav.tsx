@@ -3,6 +3,7 @@ import type { TabKey } from '../../engine/types'
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'today', label: 'Today' },
+  { key: 'rush', label: 'Rush Radar' },
   { key: 'history', label: 'History' },
   { key: 'settings', label: 'Settings' },
 ]
@@ -21,7 +22,7 @@ export default function BottomNav({ active, onChange }: { active: TabKey; onChan
             type="button"
             aria-current={active === t.key ? 'page' : undefined}
             onClick={() => onChange(t.key)}
-            className={`flex-1 font-display text-base font-bold transition-colors ${active === t.key ? 'text-ink' : 'text-muted'}`}
+            className={`flex-1 px-1 font-display text-[0.8rem] font-bold leading-tight transition-colors sm:text-base ${active === t.key ? 'text-ink' : 'text-muted'}`}
           >
             {t.label}
           </button>

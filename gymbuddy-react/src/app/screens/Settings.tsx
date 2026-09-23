@@ -20,7 +20,6 @@ import { performHardReset } from '../../lib/hardReset'
 import { useBuddySource } from '../../store/BuddySourceContext'
 import SignInButtons from '../components/SignInButtons'
 import Toast from '../components/Toast'
-import FindGymSheet from '../components/FindGymSheet'
 import BuddySheet from '../components/BuddySheet'
 
 export default function Settings() {
@@ -28,7 +27,6 @@ export default function Settings() {
   const history = useGym((s) => s.history)
   const events = useGym((s) => s.events)
   const updateProfile = useGym((s) => s.updateProfile)
-  const trackEvent = useGym((s) => s.trackEvent)
   const user = useAuthStore((s) => s.user)
   const signOut = useAuthStore((s) => s.signOut)
   const deleteAccount = useAuthStore((s) => s.deleteAccount)
@@ -42,7 +40,6 @@ export default function Settings() {
   const [hasContactProfile, setHasContactProfile] = useState(() => getContactProfile() != null)
   const [detailsDeleted, setDetailsDeleted] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
-  const [findGymOpen, setFindGymOpen] = useState(false)
   const [buddySheetOpen, setBuddySheetOpen] = useState(false)
   const [buddy, setBuddy] = useState(() => buddySource.getBuddy())
 
@@ -140,41 +137,6 @@ export default function Settings() {
           </Chip>
         ))}
       </div>
-
-      <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
-        Your gym
-      </h2>
-      <Card className="p-4">
-        <p className="text-sm text-muted">
-          Optional — lets us show which machines are usually busy at your gym right now. Only the gym's name is ever saved,
-          never your location.
-        </p>
-        {profile.gymName ? (
-          <>
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <span className="font-semibold">{profile.gymName}</span>
-              <div className="flex gap-2">
-                <GhostButton className="!min-h-0 w-auto px-4 py-2 text-sm" onClick={() => setFindGymOpen(true)}>
-                  Change
-                </GhostButton>
-                <GhostButton
-                  className="!min-h-0 w-auto px-4 py-2 text-sm"
-                  onClick={() => updateProfile({ gymName: null, gymCode: null })}
-                >
-                  Clear
-                </GhostButton>
-              </div>
-            </div>
-            <Link to="/gym-rush" className="mt-2 inline-block text-sm font-semibold underline decoration-line underline-offset-2">
-              See its rush-hour heatmap →
-            </Link>
-          </>
-        ) : (
-          <GhostButton className="mt-3" onClick={() => setFindGymOpen(true)}>
-            Find my gym
-          </GhostButton>
-        )}
-      </Card>
 
       <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
         Buddy
@@ -390,14 +352,6 @@ export default function Settings() {
           <GhostButton onClick={() => setConfirmReset(true)}>Reset all data</GhostButton>
         )}
       </div>
-      <FindGymSheet
-        open={findGymOpen}
-        onPick={(name, code, method) => {
-          updateProfile({ gymName: name, gymCode: code })
-          trackEvent('gym_located', { method })
-        }}
-        onClose={() => setFindGymOpen(false)}
-      />
       <BuddySheet
         open={buddySheetOpen}
         onClose={() => {

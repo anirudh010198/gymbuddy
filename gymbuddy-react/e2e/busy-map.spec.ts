@@ -3,12 +3,12 @@ import { onboardOnly, startWorkout, pickFirstCandidate } from './helpers'
 
 test('/gym-rush loads directly, with an honest empty state when no gym is set', async ({ page }) => {
   await page.goto('/gym-rush')
-  await expect(page.getByRole('heading', { name: 'Gym rush hours' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Rush Radar' })).toBeVisible()
   await expect(page.getByText('No gym set yet.')).toBeVisible()
 })
 
 async function setGymManually(page: import('@playwright/test').Page, name: string) {
-  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await page.getByRole('button', { name: 'Rush Radar', exact: true }).click()
   await page.getByRole('button', { name: 'Find my gym' }).click()
   await page.getByRole('button', { name: "Enter my gym's name instead" }).click()
   await page.getByLabel('Gym name').fill(name)

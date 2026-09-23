@@ -3,11 +3,13 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useGym } from '../store/GymStoreContext'
 import type { TabKey } from '../engine/types'
 import Home from './screens/Home'
+import RushRadar from './screens/RushRadar'
 import History from './screens/History'
 import Settings from './screens/Settings'
 
 const TABS: Record<TabKey, ComponentType> = {
   today: Home,
+  rush: RushRadar,
   history: History,
   settings: Settings,
 }

@@ -13,7 +13,7 @@ const ROUTES: { path: string; heading: RegExp }[] = [
   { path: '/demo', heading: /Legs day|Push day|Pull day/ },
   { path: '/exercises', heading: /All exercises/ },
   { path: '/case-study', heading: /./ },
-  { path: '/gym-rush', heading: /Gym rush hours/ },
+  { path: '/gym-rush', heading: /Rush Radar/ },
   { path: '/privacy', heading: /Privacy/ },
   { path: '/team', heading: /./ },
 ]

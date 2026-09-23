@@ -1,19 +1,17 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useGym } from '../../store/GymStoreContext'
 import { useBusySource } from '../../store/BusySourceContext'
 import { gymStatusNow } from '../../engine/busyMap'
 import PlateLogo from '../../site/components/PlateLogo'
-import FindGymSheet from './FindGymSheet'
 
 /** Persistent across every /app screen (onboarding excepted — no profile to
  *  route to yet) so there's always a way out without the browser back
  *  button: the logo jumps to Today, the right-hand link leaves the app
  *  (or, in demo mode, exits back to the real landing page). The centre slot
- *  is the always-visible "Find my gym" entry point — a name (with a
- *  busy/quiet dot once there's data) or "Set your gym" — tap either to open
- *  the same picker used in Settings. In demo mode a full-width "Demo data"
- *  bar always shows underneath, never confusable with a real account. */
+ *  is a shortcut into the Rush Radar tab — a name (with a busy/quiet dot
+ *  once there's data) or "Set your gym"; the actual gym picker lives on
+ *  that tab now, not here. In demo mode a full-width "Demo data" bar always
+ *  shows underneath, never confusable with a real account. */
 export default function AppTopBar({
   showExitLink = true,
   demo = false,
@@ -24,10 +22,7 @@ export default function AppTopBar({
   const setPeekHome = useGym((s) => s.setPeekHome)
   const setActiveTab = useGym((s) => s.setActiveTab)
   const profile = useGym((s) => s.profile)
-  const updateProfile = useGym((s) => s.updateProfile)
-  const trackEvent = useGym((s) => s.trackEvent)
   const busySource = useBusySource()
-  const [findGymOpen, setFindGymOpen] = useState(false)
 
   const gymCode = profile?.gymCode
   const status = gymCode ? gymStatusNow(busySource.all(gymCode)) : null
@@ -37,8 +32,12 @@ export default function AppTopBar({
     setPeekHome(true)
   }
 
+  function goRushRadar() {
+    setActiveTab('rush')
+    setPeekHome(true)
+  }
+
   return (
-    <>
     <div className="sticky top-0 z-30 border-b border-line bg-bg">
       <div className="mx-auto flex max-w-[480px] items-center gap-2 px-3 py-3 sm:px-4">
         <button
@@ -52,7 +51,7 @@ export default function AppTopBar({
         </button>
         <button
           type="button"
-          onClick={() => setFindGymOpen(true)}
+          onClick={goRushRadar}
           className="flex min-w-0 flex-1 items-center justify-center gap-1.5 truncate rounded-full border border-line px-2.5 py-1.5 text-sm font-semibold text-ink"
         >
           {status && (
@@ -84,14 +83,5 @@ export default function AppTopBar({
         </div>
       )}
     </div>
-    <FindGymSheet
-      open={findGymOpen}
-      onPick={(name, code, method) => {
-        updateProfile({ gymName: name, gymCode: code })
-        trackEvent('gym_located', { method })
-      }}
-      onClose={() => setFindGymOpen(false)}
-    />
-    </>
   )
 }

@@ -19,7 +19,9 @@ test('the top bar shows the gym name (even a long one) and a status dot, with no
   await expect(page.getByRole('heading', { name: 'What are you training today?' })).toBeVisible()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('heading', { name: 'What are you training today?' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Set your gym' }).click()
+  await page.getByRole('button', { name: 'Set your gym' }).click() // top-bar shortcut into Rush Radar
+  await expect(page.getByRole('heading', { name: 'Rush Radar' })).toBeVisible()
+  await page.getByRole('button', { name: 'Find my gym' }).click()
   await page.getByRole('button', { name: "Enter my gym's name instead" }).click()
   await page.getByLabel('Gym name').fill('The Extremely Long Name Fitness & Strength Centre')
   await page.getByRole('button', { name: 'Save' }).click()
