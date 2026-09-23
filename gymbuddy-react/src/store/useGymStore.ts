@@ -1,10 +1,10 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, type PersistStorage, type StorageValue } from 'zustand/middleware'
 import { BY_ID } from '../engine/exercises'
-import { SETS, FULL_ACCESSORY_SETS } from '../engine/goals'
+import { SETS, FULL_ACCESSORY_SETS, GOALS } from '../engine/goals'
 import { today } from '../engine/dates'
 import { buildGroupWorkout, swapCandidates, type GroupWorkoutPick } from '../engine/swap'
-import { ageBracketFor, effortStyleForAge } from '../engine/age'
+import { ageBracketFor, effortStyleForAge, restSecondsFor } from '../engine/age'
 import { appendEvent } from '../engine/track'
 import { customSetsFor, defaultSetsFor, goalTargetReps, totalReps, totalVolume, type SetState } from '../engine/progress'
 import type {
@@ -48,6 +48,16 @@ export interface Active {
   /** 'mixed' only ever comes from a "Build my own" session not scoped to one group. */
   group: Group | 'mixed'
   length: SessionLength
+  /** Whether the pre-workout warm-up screen has been shown/dismissed for
+   *  THIS session — persisted so it survives a reload but always starts
+   *  unset for a brand new one. */
+  warmupShown?: boolean
+  /** Rest-timer state as a plain epoch timestamp, not a running JS timer —
+   *  resuming after closing the app is just comparing this to Date.now(),
+   *  no separate "was a timer running" flag to get out of sync. */
+  restUntil?: number | null
+  /** Which item the current rest is for, so the UI can say what's next. */
+  restForItemIndex?: number | null
 }
 
 export type SwapOutcome = { ok: true; exercise: Exercise; reason: Reason } | { ok: false }
@@ -72,6 +82,10 @@ export interface GymState {
    *  transient flag rather than just "no profile yet", since the profile
    *  already exists at this point (never blocking the workout behind it). */
   postOnboardingAuthPending: boolean
+  /** True from the moment "Finish workout" is confirmed until the cooldown
+   *  card is dismissed — history/streak/PBs are already committed by then
+   *  (finishWorkout runs first), this just gates the interstitial screen. */
+  cooldownPending: boolean
 
   completeOnboarding: (goal: GoalKey, equip: Equip[], target: number, age?: number | null) => void
   changeGoal: () => void
@@ -90,6 +104,13 @@ export interface GymState {
   /** Starts a hand-built session from "Build my own" — exact exercises, set
    *  counts and rep targets the user chose, not the generated picker. */
   startCustomWorkout: (group: Group | 'mixed', picks: CustomWorkoutPick[]) => void
+  dismissWarmup: () => void
+  /** Cancels the rest timer early — same effect either way, kept as two
+   *  actions because the UI means different things by them (a deliberate
+   *  "I'm ready" vs "I need longer"), and extendRest needs a duration. */
+  skipRest: () => void
+  extendRest: (seconds: number) => void
+  dismissCooldown: () => void
   logSet: (itemIndex: number, setIndex: number) => void
   setSetValues: (itemIndex: number, setIndex: number, patch: { reps?: number; weight?: number | null }) => void
   setEffort: (itemIndex: number, effort: EffortLabel) => void
@@ -186,6 +207,13 @@ function sanitizeActive(raw: unknown, goal: GoalKey | undefined): Active | null 
     finished: a.finished as boolean | undefined,
     group: a.group as Group | 'mixed',
     length: a.length as SessionLength,
+    // This sanitizer runs on every load (see createStorage's getItem
+    // below), not just a legacy-shape migration — dropping these here
+    // would re-show the warm-up screen and lose the rest timer on every
+    // single page reload, not just once.
+    warmupShown: a.warmupShown as boolean | undefined,
+    restUntil: a.restUntil as number | null | undefined,
+    restForItemIndex: a.restForItemIndex as number | null | undefined,
   }
 }
 
@@ -287,6 +315,7 @@ export function createGymStore(
         activeTab: 'today',
         lastCustomWorkout: null,
         postOnboardingAuthPending: false,
+        cooldownPending: false,
 
         setPeekHome: (v) => set({ peekHome: v }),
         setActiveTab: (t) => set({ activeTab: t }),
@@ -326,6 +355,7 @@ export function createGymStore(
             peekHome: false,
             lastCustomWorkout: null,
             postOnboardingAuthPending: false,
+            cooldownPending: false,
           }),
 
         startWorkout: (group, length) => {
@@ -376,6 +406,20 @@ export function createGymStore(
           get().trackEvent('custom_workout_started', { exerciseCount: picks.length, group })
         },
 
+        dismissWarmup: () => set((s) => (s.active ? { active: { ...s.active, warmupShown: true } } : s)),
+
+        skipRest: () =>
+          set((s) => (s.active ? { active: { ...s.active, restUntil: null, restForItemIndex: null } } : s)),
+
+        extendRest: (seconds) =>
+          set((s) => {
+            if (!s.active) return s
+            const base = s.active.restUntil && s.active.restUntil > Date.now() ? s.active.restUntil : Date.now()
+            return { active: { ...s.active, restUntil: base + seconds * 1000 } }
+          }),
+
+        dismissCooldown: () => set({ cooldownPending: false }),
+
         logSet: (itemIndex, setIndex) => {
           const active = get().active
           const profile = get().profile
@@ -395,7 +439,15 @@ export function createGymStore(
             if (shouldUnlockTip) unlockedTip = true
             return { ...it, sets, tipShown: it.tipShown || shouldUnlockTip }
           })
-          set({ active: { ...active, items } })
+          // Auto-start the rest timer whenever a set is newly checked off —
+          // age-adjusted (restSecondsFor never lowers the goal's own rest,
+          // only raises the floor for 30-40/40+) — so the countdown always
+          // reflects who's using the app, not just which goal they picked.
+          const restUntil = justCompleted
+            ? Date.now() + restSecondsFor(GOALS[profile.goal].rest, ageBracketFor(profile.age)) * 1000
+            : active.restUntil
+          const restForItemIndex = justCompleted ? itemIndex : active.restForItemIndex
+          set({ active: { ...active, items, restUntil, restForItemIndex } })
           if (justCompleted) {
             get().trackEvent('set_logged', { ex: items[itemIndex].id })
             if (navigator.vibrate) navigator.vibrate(15)
@@ -482,9 +534,10 @@ export function createGymStore(
           }
           set((s) => ({
             history: [...s.history, entry],
-            active: { ...active, finished: true },
+            active: { ...active, finished: true, restUntil: null, restForItemIndex: null },
             lastDone: today(),
             showSummary: true,
+            cooldownPending: true,
             // 'mixed' doesn't fit the legs->push->pull rotation — leave it
             // undisturbed rather than derailing the next suggestion.
             profile: { ...profile, lastGroup: active.group === 'mixed' ? profile.lastGroup : active.group },

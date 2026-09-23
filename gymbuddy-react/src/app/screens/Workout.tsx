@@ -4,8 +4,10 @@ import { useGym } from '../../store/GymStoreContext'
 import { BY_ID } from '../../engine/exercises'
 import { GROUP_LABEL } from '../../engine/templates'
 import { GOALS } from '../../engine/goals'
+import { QUICK_SESSION_SIZE, FULL_SESSION_SIZE } from '../../engine/swap'
+import { equipSectionLabel } from '../../engine/warmup'
 import { findLastLog, formatLastTime, isPB } from '../../engine/progress'
-import { ageBracketFor, restSecondsFor, restReasonNote, warmupNote, startWeightNote, effortStyleForAge, EFFORT_STYLES, EFFORT_LEVEL_ORDER } from '../../engine/age'
+import { ageBracketFor, restSecondsFor, restReasonNote, startWeightNote, effortStyleForAge, EFFORT_STYLES, EFFORT_LEVEL_ORDER } from '../../engine/age'
 import type { Exercise, Group, Reason } from '../../engine/types'
 import { Wrap, Tag, PrimaryButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
@@ -17,7 +19,10 @@ import FormGuide from '../components/FormGuide'
 import InfoSheet, { type SwapInfo } from '../components/InfoSheet'
 import RepWeightSheet from '../components/RepWeightSheet'
 import AskCoachSheet from '../components/AskCoachSheet'
+import FinishSheet from '../components/FinishSheet'
+import RestBar from '../components/RestBar'
 import Toast from '../components/Toast'
+import Warmup from './Warmup'
 import { useAiAvailable } from '../lib/useAiAvailable'
 
 function reasonLabel(r: Reason) {
@@ -39,6 +44,9 @@ export default function Workout() {
   const previewSwap = useGym((s) => s.previewSwap)
   const applySwap = useGym((s) => s.applySwap)
   const finishWorkout = useGym((s) => s.finishWorkout)
+  const dismissWarmup = useGym((s) => s.dismissWarmup)
+  const skipRest = useGym((s) => s.skipRest)
+  const extendRest = useGym((s) => s.extendRest)
   const reduce = useReducedMotion()
 
   const [swapIndex, setSwapIndex] = useState<number | null>(null)
@@ -51,6 +59,8 @@ export default function Workout() {
   const [pulse, setPulse] = useState<{ itemIndex: number; setIndex: number } | null>(null)
   const [askIndex, setAskIndex] = useState<number | null>(null)
   const [guideOpen, setGuideOpen] = useState<Set<number>>(new Set())
+  const [confirmFinish, setConfirmFinish] = useState(false)
+  const [transitionDismissed, setTransitionDismissed] = useState<Set<number>>(new Set())
   const aiAvailable = useAiAvailable()
   const toastTimer = useRef<number | undefined>(undefined)
   const pulseTimer = useRef<number | undefined>(undefined)
@@ -136,6 +146,36 @@ export default function Workout() {
   const editingExercise = editingItem ? BY_ID[editingItem.id] : null
   const editingSet = editing ? editingItem!.sets[editing.setIndex] : null
 
+  // Where to find the exercise the current rest is counting down into — the
+  // next un-logged set on the same exercise if there is one, else the name
+  // of the next exercise that still has work left.
+  function nextUpLabel(itemIndex: number): string | null {
+    const item = active.items[itemIndex]
+    if (!item) return null
+    const nextSetIx = item.sets.findIndex((s) => s.completedAt == null)
+    if (nextSetIx !== -1) return `Set ${nextSetIx + 1} of ${item.sets.length} — ${BY_ID[item.id].name}`
+    const nextItem = active.items.find((it, i) => i > itemIndex && it.sets.some((s) => s.completedAt == null))
+    return nextItem ? BY_ID[nextItem.id].name : null
+  }
+
+  // The one item, if any, that should show the "next up" transition banner
+  // right now: the first exercise not yet started whose predecessor is done.
+  const transitionTargetIx = active.items.findIndex((it, i) => {
+    if (transitionDismissed.has(i)) return false
+    if (i === 0) return false
+    const notStarted = it.sets.every((s) => s.completedAt == null)
+    if (!notStarted) return false
+    const prev = active.items[i - 1]
+    return prev.sets.every((s) => s.completedAt != null)
+  })
+
+  const sessionTarget = active.length === 'quick' ? QUICK_SESSION_SIZE : active.length === 'full' ? FULL_SESSION_SIZE : null
+  const belowTarget = sessionTarget != null && active.items.length < sessionTarget
+
+  if (!active.warmupShown) {
+    return <Warmup group={active.group} ageBracket={ageBracket} onStart={dismissWarmup} onSkip={dismissWarmup} />
+  }
+
   return (
     <>
       <Toast message={toast} />
@@ -155,9 +195,9 @@ export default function Workout() {
           between sets. Last 2 reps should feel hard, not impossible.
         </p>
         {restReasonNote(ageBracket) && <p className="mt-1 text-sm text-muted">{restReasonNote(ageBracket)}</p>}
-        {warmupNote(ageBracket) && (
+        {belowTarget && (
           <p className="mt-2 rounded-xl bg-soft p-3 text-sm">
-            <b>Before you start:</b> {warmupNote(ageBracket)}
+            Only {active.items.length} match your equipment. Add equipment in Settings for the full {sessionTarget}-exercise session.
           </p>
         )}
         <div className="mt-3">
@@ -179,9 +219,27 @@ export default function Workout() {
             const lastTimeText = lastLog
               ? `Last time: ${formatLastTime(lastLog)}. Try to beat one set today.`
               : "First time. Find a weight that feels hard on the last 2 reps."
+            const noSetsYet = it.sets.every((s) => s.completedAt == null)
             return (
+              <div key={ix}>
+                {ix === transitionTargetIx && (
+                  <div className="mb-4 rounded-2xl border-2 border-plate/50 bg-plate/10 p-4">
+                    <p className="font-semibold">
+                      Exercise {ix + 1} of {active.items.length}: {e.name}. It's in {equipSectionLabel(e.equip)}.
+                    </p>
+                    <button
+                      type="button"
+                      className="mt-3 min-h-[44px] rounded-xl bg-plate px-4 font-display font-bold text-plate-ink"
+                      onClick={() => {
+                        setTransitionDismissed((prev) => new Set(prev).add(ix))
+                        cardRefs.current[ix]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' })
+                      }}
+                    >
+                      Start
+                    </button>
+                  </div>
+                )}
               <motion.section
-                key={ix}
                 ref={(el: HTMLElement | null) => {
                   cardRefs.current[ix] = el
                 }}
@@ -231,6 +289,12 @@ export default function Workout() {
                   <b>Avoid:</b> {e.avoid} <b>Start:</b> {e.start}
                   {startWeightNote(ageBracket) && ` ${startWeightNote(ageBracket)}`}
                 </p>
+                {noSetsYet && (
+                  <p className="mt-1 text-sm text-muted">
+                    <b>Finding your weight:</b> right if the last 2 reps feel hard but your form stays clean. Too easy?
+                    Go up next set. Can't finish the reps with good form? Go lighter.
+                  </p>
+                )}
                 <button
                   type="button"
                   className="mt-2 text-sm font-semibold underline decoration-line underline-offset-2"
@@ -333,16 +397,30 @@ export default function Workout() {
                     <p className="mt-1 text-sm">{e.bonusTip}</p>
                   </motion.div>
                 )}
+                {active.restForItemIndex === ix && active.restUntil != null && (
+                  <RestBar restUntil={active.restUntil} nextLabel={nextUpLabel(ix)} onSkip={skipRest} onExtend={extendRest} />
+                )}
               </motion.section>
+              </div>
             )
           })}
         </div>
       </Wrap>
       <Dock raised>
-        <PrimaryButton disabled={done === 0} onClick={finishWorkout}>
+        <PrimaryButton disabled={done === 0} onClick={() => setConfirmFinish(true)}>
           {done === total ? 'Finish workout' : done ? `Finish with ${done}/${total} sets` : 'Log a set to finish'}
         </PrimaryButton>
       </Dock>
+      <FinishSheet
+        open={confirmFinish}
+        done={done}
+        total={total}
+        onConfirm={() => {
+          setConfirmFinish(false)
+          finishWorkout()
+        }}
+        onClose={() => setConfirmFinish(false)}
+      />
       <SwapSheet
         open={swapIndex !== null}
         exerciseName={swapTarget?.name ?? ''}

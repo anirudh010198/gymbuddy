@@ -16,36 +16,54 @@ import type { Equip, EffortStyle, GoalKey } from '../../engine/types'
 import { Wrap, Card, Chip, GhostButton } from '../components/ui'
 import { deleteContactProfile, getContactProfile } from '../lib/contactProfile'
 import { useAuthStore } from '../../lib/authStore'
+import { performHardReset } from '../../lib/hardReset'
 import SignInButtons from '../components/SignInButtons'
+import Toast from '../components/Toast'
 
 export default function Settings() {
   const profile = useGym((s) => s.profile)!
   const history = useGym((s) => s.history)
   const events = useGym((s) => s.events)
   const updateProfile = useGym((s) => s.updateProfile)
-  const resetData = useGym((s) => s.resetData)
   const user = useAuthStore((s) => s.user)
   const signOut = useAuthStore((s) => s.signOut)
   const deleteAccount = useAuthStore((s) => s.deleteAccount)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null)
   const [ageInput, setAgeInput] = useState(profile.age != null ? String(profile.age) : '')
   const [hasContactProfile, setHasContactProfile] = useState(() => getContactProfile() != null)
   const [detailsDeleted, setDetailsDeleted] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
+
+  // Resetting the Zustand store alone left stale screens behind (other
+  // localStorage keys untouched, a service worker that could still serve
+  // old assets) — performHardReset clears all of it, and only a real
+  // navigation (not client-side routing) reliably leaves no stale React
+  // state anywhere, hence window.location rather than useNavigate.
+  async function handleResetConfirm() {
+    setResetting(true)
+    setToast('Resetting…')
+    await performHardReset()
+    window.location.href = '/'
+  }
 
   async function handleDeleteAccount() {
     setDeletingAccount(true)
     setDeleteAccountError(null)
     const res = await deleteAccount()
-    setDeletingAccount(false)
     if (!res.ok) {
+      setDeletingAccount(false)
       setDeleteAccountError(res.error ?? 'Could not delete your account. Try again.')
       return
     }
     deleteContactProfile()
-    resetData()
+    setToast('Account deleted')
+    // deleteAccount() already signed out — no need to do it again.
+    await performHardReset({ signOut: false })
+    window.location.href = '/'
   }
 
   const bracket = ageBracketFor(profile.age)
@@ -87,6 +105,7 @@ export default function Settings() {
 
   return (
     <Wrap>
+      <Toast message={toast} />
       <h1 className="mt-2 font-display font-extrabold" style={{ fontSize: '2rem' }}>
         Settings
       </h1>
@@ -280,15 +299,20 @@ export default function Settings() {
       <div className={`mt-3 rounded-card border-2 bg-card p-4 ${confirmReset ? 'border-warn' : 'border-line'}`}>
         {confirmReset ? (
           <>
-            <p className="text-sm font-semibold text-warn">This deletes all workouts and progress on this phone. This can't be undone.</p>
+            <p className="text-sm font-semibold text-warn">
+              This deletes your workouts, streaks and settings on this device. This can't be undone.
+            </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <GhostButton onClick={() => setConfirmReset(false)}>Cancel</GhostButton>
+              <GhostButton onClick={() => setConfirmReset(false)} disabled={resetting}>
+                Cancel
+              </GhostButton>
               <button
                 type="button"
-                className="min-h-[52px] w-full rounded-2xl bg-warn font-display text-xl font-bold text-chalk transition-transform active:scale-[0.98]"
-                onClick={resetData}
+                disabled={resetting}
+                className="min-h-[52px] w-full rounded-2xl bg-warn font-display text-xl font-bold text-chalk transition-transform active:scale-[0.98] disabled:opacity-60"
+                onClick={handleResetConfirm}
               >
-                Delete everything
+                {resetting ? 'Resetting…' : 'Delete everything'}
               </button>
             </div>
           </>

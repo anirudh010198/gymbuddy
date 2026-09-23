@@ -5,13 +5,14 @@ import { today } from '../engine/dates'
 import Onboarding from './screens/Onboarding'
 import AuthStep from './screens/AuthStep'
 import Workout from './screens/Workout'
+import Cooldown from './screens/Cooldown'
 import Summary from './screens/Summary'
 import TabsShell from './TabsShell'
 import AppTopBar from './components/AppTopBar'
 import BottomNav from './components/BottomNav'
 import SyncBridge from './components/SyncBridge'
 
-type ScreenName = 'onboarding' | 'auth' | 'workout' | 'summary' | 'home'
+type ScreenName = 'onboarding' | 'auth' | 'workout' | 'cooldown' | 'summary' | 'home'
 
 function useScreen(): ScreenName {
   const profile = useGym((s) => s.profile)
@@ -20,6 +21,7 @@ function useScreen(): ScreenName {
   const showSummary = useGym((s) => s.showSummary)
   const peekHome = useGym((s) => s.peekHome)
   const authPending = useGym((s) => s.postOnboardingAuthPending)
+  const cooldownPending = useGym((s) => s.cooldownPending)
 
   if (!profile) return 'onboarding'
   // Its own flag, not just "just finished onboarding" — the profile already
@@ -28,6 +30,10 @@ function useScreen(): ScreenName {
   if (authPending) return 'auth'
   if (peekHome) return 'home'
   if (active && active.date === today() && !active.finished) return 'workout'
+  // finishWorkout sets both cooldownPending and showSummary at once — the
+  // cool-down interstitial comes first, dismissCooldown just clears its own
+  // flag so the very next render falls through to summary below.
+  if (cooldownPending) return 'cooldown'
   if (lastDone === today() && showSummary) return 'summary'
   return 'home'
 }
@@ -36,6 +42,7 @@ const SCREENS: Record<ScreenName, ComponentType> = {
   onboarding: Onboarding,
   auth: AuthStep,
   workout: Workout,
+  cooldown: Cooldown,
   summary: Summary,
   home: TabsShell,
 }

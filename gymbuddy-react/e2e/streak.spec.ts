@@ -2,6 +2,10 @@ import { test, expect } from '@playwright/test'
 import { finishWorkout, mockDate, onboardOnly, startWorkout } from './helpers'
 
 test('streak counts a completed week, and a rest day / unfinished new week never resets it', async ({ page }) => {
+  // Three full workout-finish cycles (each now through the finish-confirm
+  // sheet and cool-down card, not a single click) — comfortably inside the
+  // default 45s under normal load, but tight when workers contend for CPU.
+  test.setTimeout(90000)
   await mockDate(page, '2026-09-07T09:00:00') // Monday, week 1
   await onboardOnly(page) // weekly target defaults to 3
   await startWorkout(page)

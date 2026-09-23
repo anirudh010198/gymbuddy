@@ -145,5 +145,7 @@ function buildDemoActive(group: Group, picks: ReturnType<typeof buildGroupWorkou
     })
     return { pattern: pick.pattern, id: pick.id, swaps: [], sets, tipShown: false, effort: done ? 'god' : undefined }
   })
-  return { date: today(), dayIndex: 9, items, startedAt: now - 5 * 60_000, group, length: 'quick' }
+  // warmupShown: true — a 3-week-old account has long since seen the
+  // one-time warm-up screen; the demo should land straight on the cards.
+  return { date: today(), dayIndex: 9, items, startedAt: now - 5 * 60_000, group, length: 'quick', warmupShown: true }
 }

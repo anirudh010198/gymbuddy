@@ -58,6 +58,10 @@ export async function completeOnboarding(page: Page) {
  *  for the suggested day, a "Suggested" badge — so an exact match would fail. */
 export async function startWorkout(page: Page, day: 'Legs' | 'Push' | 'Pull' = 'Legs') {
   await page.getByRole('button', { name: new RegExp(`^${day}`) }).click()
+  // Every fresh session opens on the one-time warm-up screen (see
+  // app/screens/Warmup.tsx) before the exercise cards — skip it so callers
+  // land straight on the workout, same as before it existed.
+  await page.getByRole('button', { name: 'Skip warm-up' }).click()
 }
 
 /** Logs every set on every exercise card of the active workout. A small pause
@@ -80,10 +84,14 @@ export async function logAllSets(page: Page) {
   }
 }
 
-/** Logs all sets and finishes the workout, ending on the Summary screen. */
+/** Logs all sets and finishes the workout, through the "Finish workout?"
+ *  confirm sheet and the always-shown, always-skippable cool-down card,
+ *  ending on Summary. */
 export async function finishWorkout(page: Page) {
   await logAllSets(page)
   await page.getByRole('button', { name: 'Finish workout' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Finish workout' }).click()
+  await page.getByRole('button', { name: 'Skip cool-down' }).click()
 }
 
 /** In the open "Change exercise" sheet, expands the first candidate row and

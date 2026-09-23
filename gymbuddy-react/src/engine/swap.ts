@@ -46,8 +46,8 @@ export const GROUP_PATTERNS: Record<Group, Pattern[]> = {
   pull: ['vpull', 'hpull', 'arms'],
 }
 
-const QUICK_SESSION_SIZE = 4
-const FULL_SESSION_SIZE = 6
+export const QUICK_SESSION_SIZE = 4
+export const FULL_SESSION_SIZE = 6
 
 function sortForAge(pool: Exercise[], preferSupported: boolean): Exercise[] {
   if (!preferSupported) return pool

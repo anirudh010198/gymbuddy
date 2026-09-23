@@ -23,6 +23,10 @@ test('build my own: pick exercises, set sets/reps, start, finish, and repeat the
   await expect(page.getByRole('heading', { name: 'Sets & reps' })).toBeVisible()
   await page.getByRole('button', { name: 'Start workout' }).click()
 
+  // Every fresh session opens on the one-time warm-up screen first.
+  await expect(page.getByRole('heading', { name: 'Warm up first' })).toBeVisible()
+  await page.getByRole('button', { name: 'Skip warm-up' }).click()
+
   await expect(page.getByRole('heading', { name: 'Your workout' })).toBeVisible()
   const cards = page.locator('section[aria-label]')
   await expect(cards).toHaveCount(2)
@@ -37,6 +41,8 @@ test('build my own: pick exercises, set sets/reps, start, finish, and repeat the
     }
   }
   await page.getByRole('button', { name: 'Finish workout' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Finish workout' }).click()
+  await page.getByRole('button', { name: 'Skip cool-down' }).click()
   await expect(page.getByText('Workout 1 complete')).toBeVisible()
   await expect(page.getByText(/1\/3 this week/)).toBeVisible()
   await page.getByRole('button', { name: 'Done', exact: true }).click()
@@ -45,6 +51,7 @@ test('build my own: pick exercises, set sets/reps, start, finish, and repeat the
   await page.getByRole('button', { name: 'Train again anyway' }).click()
   await expect(page.getByRole('button', { name: /^Repeat my last custom workout/ })).toBeVisible()
   await page.getByRole('button', { name: /^Repeat my last custom workout/ }).click()
+  await page.getByRole('button', { name: 'Skip warm-up' }).click()
   await expect(page.getByRole('heading', { name: 'Your workout' })).toBeVisible()
   await expect(cards).toHaveCount(2)
 })

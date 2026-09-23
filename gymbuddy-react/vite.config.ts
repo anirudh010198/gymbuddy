@@ -12,7 +12,15 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' (not 'autoUpdate') so a waiting update surfaces as a
+      // visible "reload for the latest version" prompt (see
+      // app/components/UpdatePrompt.tsx) instead of updating silently in
+      // the background — the service worker itself still calls
+      // skipWaiting()/clientsClaim() (workbox's generateSW default,
+      // unaffected by this setting), so a stale bundle never lingers past
+      // one activation either way; this only changes whether the user sees
+      // it happen.
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'GymBuddy',
@@ -33,6 +41,14 @@ export default defineConfig({
         // Default globPatterns misses fonts and icons — the core loop needs
         // everything (including the self-hosted fonts) available offline.
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // Explicit, not left to registerType's default: 'autoUpdate' turns
+        // both of these on by default, but switching to 'prompt' (above)
+        // silently turned clientsClaim back off — confirmed by inspecting
+        // the actual built sw.js, not assumed. Both stay on regardless of
+        // registerType, so a stale bundle can never linger past one
+        // activation cycle even before the visitor taps the reload prompt.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
