@@ -119,6 +119,9 @@ export default function Landing() {
               How it works
             </a>
           </div>
+          <Link to="/demo" className="mt-4 inline-block text-sm font-semibold text-ash underline decoration-steel underline-offset-2 hover:text-chalk">
+            See a 3-week-old account →
+          </Link>
         </div>
       </section>
 

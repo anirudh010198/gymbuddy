@@ -40,15 +40,16 @@ const SCREENS: Record<ScreenName, ComponentType> = {
   home: TabsShell,
 }
 
-export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
+export default function AppRoot({ asMain = true, demo = false }: { asMain?: boolean; demo?: boolean }) {
   const screen = useScreen()
   const reduce = useReducedMotion()
   const Screen = SCREENS[screen]
   const activeTab = useGym((s) => s.activeTab)
   const setActiveTab = useGym((s) => s.setActiveTab)
   const setPeekHome = useGym((s) => s.setPeekHome)
-  // The landing page embeds a second copy of this tree in its phone-frame demo —
-  // asMain=false there so the page doesn't end up with two <main> landmarks.
+  // asMain=false is for embedding this tree somewhere that already has its
+  // own <main> landmark — nothing currently does, but the option costs
+  // nothing to keep.
   const Wrapper = asMain ? 'main' : 'div'
   const rootRef = useRef<HTMLElement | null>(null)
 
@@ -62,11 +63,9 @@ export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
   }
 
   useEffect(() => {
-    // Reset scroll position on every screen change. In the real /app the
-    // window itself scrolls; embedded in the landing page's phone-frame demo,
-    // the frame's own overflow-y ancestor scrolls instead — walk up and reset
-    // whichever one applies, so a new screen never renders starting mid-scroll
-    // from wherever the previous screen left off.
+    // Reset scroll position on every screen change, whichever ancestor
+    // actually scrolls, so a new screen never renders starting mid-scroll
+    // from wherever the previous one left off.
     const el = rootRef.current
     if (!el) return
     let node: HTMLElement | null = el.parentElement
@@ -90,8 +89,8 @@ export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
       }}
       className="min-h-screen bg-bg font-sans text-ink"
     >
-      <SyncBridge />
-      {showChrome && <AppTopBar showExitLink={asMain} />}
+      {!demo && <SyncBridge />}
+      {showChrome && <AppTopBar showExitLink={asMain} demo={demo} />}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={screen}

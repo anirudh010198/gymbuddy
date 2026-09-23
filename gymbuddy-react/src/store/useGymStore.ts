@@ -250,6 +250,24 @@ function createStorage(key: string): PersistStorage<Partial<GymState>> {
   }
 }
 
+/** Backs zustand's persist API with a plain in-memory variable instead of
+ *  localStorage — nothing ever survives a reload or a fresh mount, and
+ *  nothing here ever touches the real "gymbuddy.v1" key. Used for /demo
+ *  (src/pages/Demo.tsx), which seeds a store with fake data and must never
+ *  read or write a visitor's real progress. */
+export function createMemoryStorage(): PersistStorage<Partial<GymState>> {
+  let value: StorageValue<Partial<GymState>> | null = null
+  return {
+    getItem: () => value,
+    setItem: (_key, v) => {
+      value = v
+    },
+    removeItem: () => {
+      value = null
+    },
+  }
+}
+
 /** `storage` defaults to localStorage, keyed by `storageKey` — the shape the
  *  one real "gymbuddy.v1" store (below) always uses. */
 export function createGymStore(
