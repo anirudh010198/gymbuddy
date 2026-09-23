@@ -36,16 +36,17 @@ export function buildWorkout(dayIndex: number, equip: Equip[]): ActiveWorkout {
   return { date: today(), dayIndex, items, startedAt: Date.now() }
 }
 
-/** The patterns that make up each muscle group — a single-group day (Quick)
- *  picks exactly one exercise per pattern here, which is why "no duplicate
- *  patterns" is achievable for Quick (3 patterns, 3 exercises) but not for
- *  Full (6 exercises drawn from the same 3 patterns; see buildGroupWorkout). */
+/** The patterns that make up each muscle group. Each group has only 3 of
+ *  these, so neither Quick (4 exercises) nor Full (6) can guarantee zero
+ *  pattern repeats — buildGroupWorkout round-robins across patterns for
+ *  best-effort variety instead, same idea for both, just a different count. */
 export const GROUP_PATTERNS: Record<Group, Pattern[]> = {
   legs: ['squat', 'hinge', 'lunge'],
   push: ['hpush', 'vpush', 'arms'],
   pull: ['vpull', 'hpull', 'arms'],
 }
 
+const QUICK_SESSION_SIZE = 4
 const FULL_SESSION_SIZE = 6
 
 function sortForAge(pool: Exercise[], preferSupported: boolean): Exercise[] {
@@ -93,33 +94,22 @@ export interface GroupWorkoutPick {
 }
 
 /**
- * Builds one day's exercise picks for a single chosen muscle group.
- * Quick: one exercise per pattern in the group (main-preferred), so 3
- * patterns -> 3 exercises with no pattern repeated.
- * Full: up to 6 — every group has exactly 8 exercises (5-6 main, 2-3
- * accessory), so mains come first (round-robined across patterns for
- * variety), then accessories fill any remaining slots.
+ * Builds one day's exercise picks for a single chosen muscle group. Quick
+ * picks 4, Full picks 6 — both the same way: mains first (round-robined
+ * across patterns for best-effort variety), then accessories fill any
+ * remaining slots, capped at the session size. Every group has enough
+ * mains alone (5-6) to fill Quick's 4 slots, so a Quick session is always
+ * 4 main-role exercises; Full is the one that reaches into accessories.
  */
 export function buildGroupWorkout(group: Group, length: SessionLength, equip: Equip[], preferSupportedEquip = false): GroupWorkoutPick[] {
-  const patterns = GROUP_PATTERNS[group]
   const groupPool = sortForAge(
     availableExercises(equip).filter((e) => e.group === group),
     preferSupportedEquip,
   )
-
-  if (length === 'quick') {
-    return patterns.map((pattern) => {
-      const pool = groupPool.filter((e) => e.pattern === pattern)
-      const mains = pool.filter((e) => e.role === 'main')
-      const pick = mains[0] ?? pool[0] ?? EXERCISES.find((e) => e.pattern === pattern && e.equip === 'bodyweight')
-      if (!pick) throw new Error(`No exercise available for pattern "${pattern}"`)
-      return { pattern, id: pick.id, role: pick.role }
-    })
-  }
-
+  const size = length === 'quick' ? QUICK_SESSION_SIZE : FULL_SESSION_SIZE
   const mains = roundRobinByPattern(groupPool.filter((e) => e.role === 'main'))
   const accessories = roundRobinByPattern(groupPool.filter((e) => e.role === 'accessory'))
-  const picks = [...mains, ...accessories].slice(0, FULL_SESSION_SIZE)
+  const picks = [...mains, ...accessories].slice(0, size)
   return picks.map((e) => ({ pattern: e.pattern, id: e.id, role: e.role }))
 }
 
@@ -141,24 +131,18 @@ function reasonScore(e: Exercise, cur: Exercise, reason: Reason): number {
 }
 
 /**
- * Swap engine: deterministic, instant, works offline. Pool tiers narrow from
- * same pattern → same group → group's bodyweight fallback, always excluding
- * exercises already tried on this item. Reason changes the ranking within
- * whichever tier has candidates. Returns the full ranked pool, best first —
- * the "Change exercise" list shows all of them; `swapCandidate` (singular)
- * just takes the top one for callers that don't need the whole list.
+ * Swap engine: deterministic, instant, works offline. The pool is every
+ * available exercise in the current one's muscle group (not narrowed to its
+ * pattern) — the "Change exercise" list is meant to show every option in
+ * that group, always excluding exercises already tried on this item.
+ * Reason changes the ranking within that pool. Returns the full ranked
+ * pool, best first; `swapCandidate` (singular) just takes the top one for
+ * callers that don't need the whole list.
  */
 export function swapCandidates(item: WorkoutItem, reason: Reason, equip: Equip[]): Exercise[] {
   const cur = BY_ID[item.id]
   const tried = new Set([item.id, ...item.swaps.map((s) => s.from)])
-  const avail = availableExercises(equip)
-
-  const tiers = [
-    avail.filter((e) => e.pattern === cur.pattern && !tried.has(e.id)),
-    avail.filter((e) => e.group === cur.group && !tried.has(e.id)),
-    avail.filter((e) => e.group === cur.group && e.equip === 'bodyweight' && !tried.has(e.id)),
-  ]
-  const pool = tiers.find((t) => t.length) ?? []
+  const pool = availableExercises(equip).filter((e) => e.group === cur.group && !tried.has(e.id))
   if (!pool.length) return []
 
   return pool

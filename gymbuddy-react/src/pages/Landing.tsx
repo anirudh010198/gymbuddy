@@ -27,7 +27,7 @@ const GROUPS: Group[] = ['legs', 'push', 'pull']
 
 const HOW_IT_WORKS = [
   { n: 1, title: 'Pick a goal', body: 'Lose fat, build muscle, or get generally fit — plus the equipment your gym actually has.' },
-  { n: 2, title: 'Do 3 exercises', body: 'One legs, one push, one pull. About 25 minutes, no guessing what comes next.' },
+  { n: 2, title: 'Do 4 exercises', body: 'Pick legs, push, or pull. About 30 minutes, no guessing what comes next.' },
   { n: 3, title: 'Machine busy? Swap', body: "Tell us why and we'll pick a replacement that works the same muscles." },
   { n: 4, title: 'Streak grows weekly', body: 'Hit your weekly target and watch the streak build — a rest day never breaks it.' },
 ]
@@ -110,7 +110,7 @@ export default function Landing() {
               </motion.span>
             ))}
           </h1>
-          <p className="mt-5 max-w-[440px] text-lg text-ash">3 exercises a day. A backup ready when your machine is taken.</p>
+          <p className="mt-5 max-w-[440px] text-lg text-ash">4 exercises a day. A backup ready when your machine is taken.</p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link to="/app" className="rounded-2xl bg-plate px-6 py-3.5 font-display text-lg font-bold text-plate-ink shadow-neon">
               Start today's workout

@@ -32,25 +32,25 @@ describe('swapCandidate', () => {
     expect(next!.equip).not.toBe(BY_ID['leg_press'].equip)
   })
 
-  it('pain prefers the lowest level exercise available in the pool', () => {
+  it('pain prefers the lowest level exercise available in the whole group', () => {
     const item: WorkoutItem = { pattern: 'hinge', id: 'hip_thrust', swaps: [] } // level 2
     const next = swapCandidate(item, 'pain', FULL_EQUIP)
     expect(next).not.toBeNull()
 
-    // Every other candidate in the same first non-empty tier the engine
-    // would have picked from should have level >= the chosen one.
+    // The Change-exercise pool is the whole legs group now, not just the
+    // hinge pattern — every other available legs candidate should have
+    // level >= the chosen one.
     const cur = BY_ID['hip_thrust']
     const tried = new Set([item.id])
-    const avail = ['db_rdl', 'leg_curl', 'hip_thrust', 'glute_bridge'].map((id) => BY_ID[id])
-    const pool = avail.filter((e) => e.pattern === cur.pattern && !tried.has(e.id))
+    const pool = Object.values(BY_ID).filter((e) => e.group === cur.group && !tried.has(e.id))
     const minLevel = Math.min(...pool.map((e) => e.level))
     expect(next!.level).toBe(minLevel)
   })
 
-  it('returns null once every tier (pattern, group, bodyweight) is exhausted', () => {
-    // Bodyweight-only user: chain through every legs-group bodyweight
-    // exercise (box_squat -> split_squat -> glute_bridge), so `tried` covers
-    // the whole group and no pattern, group or fallback tier has anything left.
+  it('returns null once every exercise in the group has been tried', () => {
+    // Bodyweight-only user: availableExercises([]) is bodyweight exercises
+    // only, so chaining through every legs-group bodyweight exercise
+    // exhausts the whole pool this user could ever see.
     const legsIds = Object.values(BY_ID)
       .filter((e) => e.group === 'legs' && e.equip === 'bodyweight')
       .map((e) => e.id)

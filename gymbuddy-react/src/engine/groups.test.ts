@@ -6,19 +6,22 @@ import type { Equip } from './types'
 const FULL_EQUIP: Equip[] = ['machine', 'cable', 'dumbbell', 'barbell']
 
 describe('buildGroupWorkout', () => {
-  it('quick: picks exactly one exercise per pattern, no pattern repeated, all from the chosen group', () => {
-    const picks = buildGroupWorkout('legs', 'quick', FULL_EQUIP)
-    expect(picks).toHaveLength(3)
-    const patterns = picks.map((p) => p.pattern)
-    expect(new Set(patterns).size).toBe(3) // no duplicates
-    for (const p of picks) expect(BY_ID[p.id].group).toBe('legs')
+  it('quick: picks 4 unique exercises, all mains (every group has >= 4), all from the chosen group', () => {
+    for (const group of ['legs', 'push', 'pull'] as const) {
+      const picks = buildGroupWorkout(group, 'quick', FULL_EQUIP)
+      expect(picks).toHaveLength(4)
+      const ids = picks.map((p) => p.id)
+      expect(new Set(ids).size).toBe(ids.length) // never the same exercise twice
+      expect(picks.every((p) => p.role === 'main')).toBe(true)
+      for (const p of picks) expect(BY_ID[p.id].group).toBe(group)
+    }
   })
 
   it('full: picks up to 6 unique exercises, mains before accessories, all from the chosen group', () => {
     for (const group of ['legs', 'push', 'pull'] as const) {
       const picks = buildGroupWorkout(group, 'full', FULL_EQUIP)
       expect(picks.length).toBeLessThanOrEqual(6)
-      expect(picks.length).toBeGreaterThan(3) // more than a Quick session
+      expect(picks.length).toBeGreaterThan(4) // more than a Quick session (4)
       const ids = picks.map((p) => p.id)
       expect(new Set(ids).size).toBe(ids.length) // never the same exercise twice
       for (const p of picks) expect(BY_ID[p.id].group).toBe(group)

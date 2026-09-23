@@ -6,12 +6,18 @@ test('onboarding -> busy swap -> pain swap (safety sheet) -> log all sets -> fin
 
   await expect(page.getByRole('heading', { name: /Legs day/ })).toBeVisible()
   const cards = page.locator('section[aria-label]')
-  await expect(cards).toHaveCount(3)
+  await expect(cards).toHaveCount(4) // Quick session
 
   // Busy swap on the first card: pick a reason, then choose a replacement from the list.
+  // The list must cover every available legs exercise, not just the current
+  // one's movement pattern — with the default machine+cable+dumbbell
+  // equipment, that's 10 legs exercises total (see engine/exercises.ts),
+  // so swapping any one of them away always offers the other 9.
   await cards.nth(0).getByRole('button', { name: 'Swap' }).click()
   await page.getByRole('button', { name: /It's busy or not here/ }).click()
+  const changeSheet = page.getByRole('dialog').filter({ hasText: 'Change exercise' })
   await expect(page.getByRole('heading', { name: 'Change exercise' })).toBeVisible()
+  await expect(changeSheet.getByRole('button', { expanded: false })).toHaveCount(9)
   await pickFirstCandidate(page)
   await expect(cards.nth(0).getByText(/Swapped in for/)).toBeVisible()
 
@@ -36,11 +42,11 @@ test('resumes an in-progress workout after navigating away and back', async ({ p
 
   const cards = page.locator('section[aria-label]')
   await cards.nth(0).getByRole('button', { name: /not done/ }).first().click()
-  await expect(page.getByTestId('sets-progress')).toHaveText('1/9 sets')
+  await expect(page.getByTestId('sets-progress')).toHaveText('1/12 sets') // 4 exercises x 3 sets
 
   await page.goto('/')
   await page.goto('/app')
 
   await expect(page.getByRole('heading', { name: /Legs day/ })).toBeVisible()
-  await expect(page.getByTestId('sets-progress')).toHaveText('1/9 sets')
+  await expect(page.getByTestId('sets-progress')).toHaveText('1/12 sets')
 })

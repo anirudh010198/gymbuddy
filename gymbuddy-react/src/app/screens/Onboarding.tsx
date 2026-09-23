@@ -70,7 +70,7 @@ export default function Onboarding() {
             what to do.
           </h1>
           <p className="mt-3 text-lg text-muted">
-            Three exercises a day, with a backup ready when a machine is taken. A few quick questions and you're set.
+            Four exercises a day, with a backup ready when a machine is taken. A few quick questions and you're set.
           </p>
         </Wrap>
         <StepFooter step={step}>

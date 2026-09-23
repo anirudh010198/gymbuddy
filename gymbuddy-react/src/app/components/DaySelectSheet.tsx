@@ -51,7 +51,7 @@ export default function DaySelectSheet({
           className={`rounded-2xl border-2 p-3 text-left ${length === 'quick' ? 'border-plate bg-plate/10' : 'border-line'}`}
         >
           <div className="font-display font-bold">Quick</div>
-          <div className="text-xs text-muted">3 exercises, ~25 min</div>
+          <div className="text-xs text-muted">4 exercises, ~30 min</div>
         </button>
         <button
           type="button"
