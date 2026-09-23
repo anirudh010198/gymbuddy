@@ -1,4 +1,4 @@
-import type { AgeBracket, Equip } from './types'
+import type { AgeBracket, Equip, EffortLabel, EffortStyle } from './types'
 
 /** No medical claims — this is general beginner-gym pacing guidance only,
  *  adjustable any time in Settings, never fetched from anywhere external. */
@@ -57,3 +57,50 @@ export const AGE_BRACKET_LABEL: Record<AgeBracket, string> = {
   '30to40': '30–40',
   '40plus': '40+',
 }
+
+/** The default effort-label style for each age bracket, applied once at
+ *  onboarding — from then on it's just a Settings preference, independent
+ *  of age. Missing age (old profiles predating the required question)
+ *  falls back to the middle, least-jargony style. */
+export function effortStyleForAge(bracket: AgeBracket | null): EffortStyle {
+  if (bracket === 'under30') return 'genz'
+  if (bracket === '40plus') return 'classic'
+  return 'balanced'
+}
+
+export interface EffortLevelContent {
+  emoji: string
+  label: string
+}
+
+/** All three styles describe the same four underlying effort levels, stored
+ *  identically as "casual"|"sigma"|"god"|"aura" — only the label+emoji
+ *  shown to the user changes. */
+export const EFFORT_STYLES: Record<EffortStyle, Record<EffortLabel, EffortLevelContent>> = {
+  genz: {
+    casual: { emoji: '😌', label: 'Casual Arc' },
+    sigma: { emoji: '😎', label: 'Sigma Arc' },
+    god: { emoji: '⚡', label: 'God Mode' },
+    aura: { emoji: '🔥', label: 'Aura Farming' },
+  },
+  balanced: {
+    casual: { emoji: '🙂', label: 'Comfortable' },
+    sigma: { emoji: '💪', label: 'Solid Effort' },
+    god: { emoji: '🔥', label: 'Pushed Hard' },
+    aura: { emoji: '🏆', label: 'All Out' },
+  },
+  classic: {
+    casual: { emoji: '✓', label: 'Easy' },
+    sigma: { emoji: '✓✓', label: 'Moderate' },
+    god: { emoji: '▲', label: 'Hard' },
+    aura: { emoji: '★', label: 'Maximum' },
+  },
+}
+
+export const EFFORT_STYLE_LABEL: Record<EffortStyle, string> = {
+  genz: 'Gen-Z mode',
+  balanced: 'Balanced',
+  classic: 'Classic',
+}
+
+export const EFFORT_LEVEL_ORDER: EffortLabel[] = ['casual', 'sigma', 'god', 'aura']

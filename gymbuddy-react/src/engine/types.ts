@@ -47,8 +47,15 @@ export interface WorkoutItem {
 export type SessionLength = 'quick' | 'full' | 'custom'
 
 /** Post-set effort self-rating. Shown for every user, every goal, every age —
- *  age only ever changes rest timing, never which features are visible. */
+ *  age only ever changes rest timing, exercise selection, and which of the
+ *  three label styles below is the default — never whether the chips
+ *  themselves are visible. */
 export type EffortLabel = 'casual' | 'sigma' | 'god' | 'aura'
+
+/** How the four effort levels are worded/decorated. Auto-set from age at
+ *  onboarding, always changeable afterward in Settings — the underlying
+ *  four levels and their stored keys never change, only the label+emoji. */
+export type EffortStyle = 'genz' | 'balanced' | 'classic'
 
 export type TabKey = 'today' | 'history' | 'settings'
 
@@ -120,10 +127,15 @@ export interface Profile {
   equip: Equip[]
   target: number
   created: string
-  /** Optional, skippable — adjusts rest/warm-up/equipment guidance locally. Never sent anywhere. */
+  /** Required in onboarding (sets rest/warm-up/equipment guidance and the
+   *  default effort-label style) — optional/nullable here only so old
+   *  profiles saved before this was required don't crash on load. */
   age?: number | null
   /** Last single-group day trained (legs/push/pull), for "suggest the next logical one". */
   lastGroup?: Group | null
+  /** Defaults from age at onboarding; always user-overridable in Settings
+   *  afterward, independent of age from then on. */
+  effortStyle?: EffortStyle
 }
 
 export interface TrackEvent {

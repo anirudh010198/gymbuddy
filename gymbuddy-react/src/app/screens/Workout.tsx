@@ -5,8 +5,8 @@ import { BY_ID } from '../../engine/exercises'
 import { GROUP_LABEL } from '../../engine/templates'
 import { GOALS } from '../../engine/goals'
 import { findLastLog, formatLastTime, isPB } from '../../engine/progress'
-import { ageBracketFor, restSecondsFor, restReasonNote, warmupNote, startWeightNote } from '../../engine/age'
-import type { EffortLabel, Exercise, Group, Reason } from '../../engine/types'
+import { ageBracketFor, restSecondsFor, restReasonNote, warmupNote, startWeightNote, effortStyleForAge, EFFORT_STYLES, EFFORT_LEVEL_ORDER } from '../../engine/age'
+import type { Exercise, Group, Reason } from '../../engine/types'
 import { Wrap, Tag, PrimaryButton, Dock } from '../components/ui'
 import ProgressBar from '../components/ProgressBar'
 import Plate from '../components/Plate'
@@ -28,16 +28,6 @@ function formatSetLabel(reps: number, weight: number | null) {
   const r = `${reps}`
   return weight != null ? `${r} × ${weight % 1 === 0 ? weight : weight.toFixed(1)}kg` : `${r} reps`
 }
-
-/** Post-set effort self-rating — visible for every user, every goal, every
- *  age. Age only ever changes rest timing (see engine/age.ts), never which
- *  features render. */
-const EFFORT_LEVELS: { key: EffortLabel; label: string }[] = [
-  { key: 'casual', label: 'Casual Arc' },
-  { key: 'sigma', label: 'Sigma Arc' },
-  { key: 'god', label: 'God Mode' },
-  { key: 'aura', label: 'Aura Farming' },
-]
 
 export default function Workout() {
   const active = useGym((s) => s.active)!
@@ -75,6 +65,10 @@ export default function Workout() {
   const g = GOALS[profile.goal]
   const ageBracket = ageBracketFor(profile.age)
   const restSeconds = restSecondsFor(g.rest, ageBracket)
+  // Defaults from age at onboarding but always user-overridable in Settings
+  // from then on — profile.effortStyle may be missing on profiles saved
+  // before this existed, hence the age-derived fallback.
+  const effortContent = EFFORT_STYLES[profile.effortStyle ?? effortStyleForAge(ageBracket)]
   const total = active.items.reduce((a, it) => a + it.sets.length, 0)
   const done = active.items.reduce((a, i) => a + i.sets.filter((s) => s.completedAt != null).length, 0)
 
@@ -266,6 +260,7 @@ export default function Workout() {
                         <Plate
                           index={si}
                           done={s.completedAt != null}
+                          effortEmoji={it.effort ? effortContent[it.effort].emoji : undefined}
                           onToggle={() => {
                             const turningOn = s.completedAt == null
                             if (turningOn) {
@@ -311,17 +306,17 @@ export default function Workout() {
                   <div className="mt-4" role="group" aria-label="Effort for this exercise">
                     <div className="text-sm font-semibold text-muted">How did that feel?</div>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {EFFORT_LEVELS.map((lvl) => (
+                      {EFFORT_LEVEL_ORDER.map((key) => (
                         <button
-                          key={lvl.key}
+                          key={key}
                           type="button"
-                          aria-pressed={it.effort === lvl.key}
-                          onClick={() => setEffort(ix, lvl.key)}
+                          aria-pressed={it.effort === key}
+                          onClick={() => setEffort(ix, key)}
                           className={`rounded-full border-2 px-3 py-1.5 text-sm font-semibold ${
-                            it.effort === lvl.key ? 'border-plate bg-plate/20' : 'border-line'
+                            it.effort === key ? 'border-plate bg-plate/20' : 'border-line'
                           }`}
                         >
-                          {lvl.label}
+                          {effortContent[key].emoji} {effortContent[key].label}
                         </button>
                       ))}
                     </div>

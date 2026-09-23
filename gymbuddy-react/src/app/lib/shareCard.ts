@@ -1,10 +1,10 @@
 /** Draws a clean, on-brand share card (no personal data — just the numbers) with
  *  the native Canvas API, so sharing a workout doesn't require a new dependency. */
 
-const RUBBER = '#1E2B30'
-const CHALK = '#EEF1EC'
-const PLATE = '#F2C230'
-const IRON = '#9FB0B4'
+const RUBBER = '#0B0B0D'
+const CHALK = '#F2F2F0'
+const PLATE = '#E1122B'
+const IRON = '#8A8A94'
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
   const words = text.split(' ')
@@ -81,7 +81,7 @@ export async function buildShareImage(stats: ShareCardStats): Promise<Blob | nul
     y += 190
   }
 
-  ctx.fillStyle = '#5B6B70'
+  ctx.fillStyle = IRON
   ctx.font = '500 30px Barlow, sans-serif'
   ctx.fillText('Know exactly what to do on the gym floor.', 80, 1290)
 

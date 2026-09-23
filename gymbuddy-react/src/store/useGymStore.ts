@@ -4,6 +4,7 @@ import { BY_ID } from '../engine/exercises'
 import { SETS, FULL_ACCESSORY_SETS } from '../engine/goals'
 import { today } from '../engine/dates'
 import { buildGroupWorkout, swapCandidates, type GroupWorkoutPick } from '../engine/swap'
+import { ageBracketFor, effortStyleForAge } from '../engine/age'
 import { appendEvent } from '../engine/track'
 import { customSetsFor, defaultSetsFor, goalTargetReps, totalReps, totalVolume, type SetState } from '../engine/progress'
 import type {
@@ -69,7 +70,7 @@ export interface GymState {
 
   completeOnboarding: (goal: GoalKey, equip: Equip[], target: number, age?: number | null) => void
   changeGoal: () => void
-  updateProfile: (patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target' | 'age'>>) => void
+  updateProfile: (patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target' | 'age' | 'effortStyle'>>) => void
   resetData: () => void
   setPeekHome: (v: boolean) => void
   setActiveTab: (t: TabKey) => void
@@ -265,7 +266,15 @@ export function createGymStore(
         trackEvent: (type, data) => set((s) => ({ events: appendEvent(s.events, type, data) })),
 
         completeOnboarding: (goal, equip, target, age) => {
-          const profile: Profile = { goal, equip, target, created: today(), age: age ?? null, lastGroup: null }
+          const profile: Profile = {
+            goal,
+            equip,
+            target,
+            created: today(),
+            age: age ?? null,
+            lastGroup: null,
+            effortStyle: effortStyleForAge(ageBracketFor(age ?? null)),
+          }
           set({ profile })
           get().trackEvent('onboard_done', { equip, target, age: age ?? undefined })
           // No more auto-starting a workout here — the day/length choice

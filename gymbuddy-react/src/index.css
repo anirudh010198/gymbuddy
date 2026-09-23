@@ -10,47 +10,101 @@
 @tailwind components;
 @tailwind utilities;
 
-/* GymBuddy design tokens — see CLAUDE.md section 3 */
+/* GymBuddy design tokens — dark, cinematic, red neon. Values chosen and
+   contrast-checked (WCAG AA) rather than lifted directly from the naive
+   brief: --plate-ink is white in both modes because white-on-#E1122B
+   (~4.9:1) actually beats dark-on-#E1112B (~3.9:1, fails AA at body-text
+   size) — this red is a mid-dark red, not a bright one. --go and --warn use
+   different shades per mode since a single shade can't pass AA against both
+   a near-black and a near-white surface.
+
+   Every colour is stored TWICE: once as a decimal "R G B" triplet (the
+   -rgb variables — this is the actual source of truth) and once as a plain
+   rgb() value derived from it. Tailwind's opacity modifier (bg-plate/10,
+   text-line/50, ...) only generates a rule when the theme colour is wired
+   to rgb(var(--x-rgb) / <alpha-value>) — a colour wired to a plain
+   var(--hex) silently produces NO rule for any /NN modifier at all (this
+   was true before this redesign too; the old lower-contrast palette just
+   never made the missing translucency obvious). tailwind.config.js's
+   `colors` block points at the -rgb variables for exactly this reason; the
+   plain var(--x) forms below exist only for raw CSS/SVG use
+   (stroke="var(--line)" etc.) outside Tailwind's utility classes. */
 :root {
-  --rubber: #1e2b30;
-  --chalk: #eef1ec;
-  --paper: #ffffff;
-  --iron: #5b6b70;
-  --line: #d5dbd6;
-  --plate: #f2c230;
-  --plate-ink: #3a2e00;
-  --go: #2f8f5b;
-  --warn: #c2412d;
-  --soft: #e3e8e3;
+  /* Primitives */
+  --void-rgb: 11 11 13;
+  --carbon-rgb: 20 20 24;
+  --steel-rgb: 34 34 42;
+  --red-rgb: 225 18 43;
+  --red-glow: rgba(225, 18, 43, 0.35);
+  --bone-rgb: 242 242 240;
+  --ash-rgb: 138 138 148;
+  --amber-rgb: 245 165 36;
 
-  --text: #1e2b30;
-  --muted: #5b6b70;
-  --bg: #eef1ec;
-  --card: #ffffff;
+  /* Semantic — dark (the default look) */
+  --rubber-rgb: var(--void-rgb);
+  --chalk-rgb: var(--bone-rgb);
+  --bg-rgb: var(--void-rgb);
+  --card-rgb: var(--carbon-rgb);
+  --text-rgb: var(--bone-rgb);
+  --muted-rgb: var(--ash-rgb);
+  --line-rgb: var(--steel-rgb);
+  --soft-rgb: 27 27 33;
+  --plate-rgb: var(--red-rgb);
+  --plate-ink-rgb: 255 255 255;
+  --plate-border-rgb: 157 13 30;
+  --go-rgb: 47 143 91;
+  --warn-rgb: var(--amber-rgb);
 
-  color-scheme: light dark;
+  /* Plain rgb() forms, derived from the triplets above — dynamic, not a
+     snapshot, so overriding just the -rgb variable (see the light-mode
+     blocks below) still flows through to these automatically. */
+  --void: rgb(var(--void-rgb));
+  --carbon: rgb(var(--carbon-rgb));
+  --steel: rgb(var(--steel-rgb));
+  --red: rgb(var(--red-rgb));
+  --bone: rgb(var(--bone-rgb));
+  --ash: rgb(var(--ash-rgb));
+  --amber: rgb(var(--amber-rgb));
+  --rubber: rgb(var(--rubber-rgb));
+  --chalk: rgb(var(--chalk-rgb));
+  --bg: rgb(var(--bg-rgb));
+  --card: rgb(var(--card-rgb));
+  --text: rgb(var(--text-rgb));
+  --muted: rgb(var(--muted-rgb));
+  --line: rgb(var(--line-rgb));
+  --soft: rgb(var(--soft-rgb));
+  --plate: rgb(var(--plate-rgb));
+  --plate-ink: rgb(var(--plate-ink-rgb));
+  --plate-border: rgb(var(--plate-border-rgb));
+  --go: rgb(var(--go-rgb));
+  --warn: rgb(var(--warn-rgb));
+
+  color-scheme: dark light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #152024;
-    --card: #1e2b30;
-    --text: #eef1ec;
-    --muted: #9fb0b4;
-    --line: #2e3e44;
-    --soft: #26363c;
-    --paper: #1e2b30;
+/* Soft warm grey — the alternate light mode. Same red accent throughout. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    --bg-rgb: 244 244 242;
+    --card-rgb: 255 255 255;
+    --text-rgb: 11 11 13;
+    --muted-rgb: 107 107 114;
+    --line-rgb: 222 222 218;
+    --soft-rgb: 236 236 232;
+    --go-rgb: 31 107 65;
+    --warn-rgb: 138 90 0;
   }
 }
 
-:root[data-theme='dark'] {
-  --bg: #152024;
-  --card: #1e2b30;
-  --text: #eef1ec;
-  --muted: #9fb0b4;
-  --line: #2e3e44;
-  --soft: #26363c;
-  --paper: #1e2b30;
+:root[data-theme='light'] {
+  --bg-rgb: 244 244 242;
+  --card-rgb: 255 255 255;
+  --text-rgb: 11 11 13;
+  --muted-rgb: 107 107 114;
+  --line-rgb: 222 222 218;
+  --soft-rgb: 236 236 232;
+  --go-rgb: 31 107 65;
+  --warn-rgb: 138 90 0;
 }
 
 :root {
@@ -99,12 +153,16 @@ a:focus-visible {
    regardless of the browser's dark-mode/print settings. */
 @media print {
   :root {
-    --bg: #ffffff;
-    --card: #ffffff;
-    --text: #1e2b30;
-    --muted: #5b6b70;
-    --line: #d5dbd6;
-    --soft: #e3e8e3;
+    /* Overriding only the -rgb variables (not the plain rgb() forms
+       derived from them) so Tailwind's bg-card/text-ink/border-line/etc
+       utility classes — wired to the -rgb variables directly, not to
+       var(--card) — also respect print mode, not just raw CSS var() use. */
+    --bg-rgb: 255 255 255;
+    --card-rgb: 255 255 255;
+    --text-rgb: 11 11 13;
+    --muted-rgb: 107 107 114;
+    --line-rgb: 222 222 218;
+    --soft-rgb: 236 236 232;
   }
   body {
     background: #fff;

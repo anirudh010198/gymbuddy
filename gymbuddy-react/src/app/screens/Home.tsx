@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useGym } from '../../store/GymStoreContext'
 import { streakWeeks, trainedToday, weekCount } from '../../engine/streak'
 import { today, weekStart } from '../../engine/dates'
@@ -38,6 +38,16 @@ export default function Home() {
     }
     setDaySelectOpen(true)
   }
+
+  // Day-selection is the first thing shown, every session — not a screen
+  // the user has to go tap for. Only when there's a genuine choice to make:
+  // not mid-workout (nothing to pick), not already done for today (that's
+  // the deliberate "Train again anyway" path instead).
+  useEffect(() => {
+    if (!done && !resumable) setDaySelectOpen(true)
+    // Deliberately empty deps: fire once per mount only, not every time
+    // `done`/`resumable` change (that would reopen the sheet mid-interaction).
+  }, [])
 
   return (
     <Wrap>

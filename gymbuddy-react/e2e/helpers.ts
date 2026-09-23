@@ -23,24 +23,27 @@ export async function mockDate(page: Page, iso: string) {
   }, iso)
 }
 
-/** Completes onboarding with the first goal option and default equipment/target,
- *  then opens the day-select sheet and starts a workout (onboarding no longer
- *  auto-starts one). Defaults to a Legs day — the suggested first day when no
- *  group has been trained yet — at whatever session length is pre-selected
- *  (Quick for the first two workouts). */
+/** Completes onboarding (age is required) with the first goal option and
+ *  default equipment/target, then starts a workout. */
 export async function completeOnboarding(page: Page) {
   await page.goto('/app')
   await page.locator('button[aria-pressed]').first().click() // first goal chip
   await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByLabel('Your age').fill('28')
   await page.getByRole('button', { name: 'Build my plan' }).click()
   await startWorkout(page)
 }
 
-/** Opens the Home day-select sheet and starts a workout for the given day.
+/** Picks a day and starts a workout. The day-select sheet auto-opens as the
+ *  first thing on every fresh Home mount where there's a genuine choice to
+ *  make (not mid-workout, not already done for today) — including right
+ *  after onboarding and after a reload on a new day — so this assumes it's
+ *  already open rather than tapping "Start today's workout" first: that Dock
+ *  button sits BEHIND the sheet's full-screen backdrop once it's open, so
+ *  clicking it would actually hit the backdrop and close the sheet instead.
  *  Regex name match: the day buttons also contain a muscle sub-label and,
  *  for the suggested day, a "Suggested" badge — so an exact match would fail. */
 export async function startWorkout(page: Page, day: 'Legs' | 'Push' | 'Pull' = 'Legs') {
-  await page.getByRole('button', { name: "Start today's workout" }).click()
   await page.getByRole('button', { name: new RegExp(`^${day}`) }).click()
 }
 

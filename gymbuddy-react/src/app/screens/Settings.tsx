@@ -2,8 +2,17 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useGym } from '../../store/GymStoreContext'
 import { EQUIP_OPTIONS, GOALS } from '../../engine/goals'
-import { AGE_BRACKET_LABEL, ageBracketFor, restReasonNote, warmupNote } from '../../engine/age'
-import type { Equip, GoalKey } from '../../engine/types'
+import {
+  AGE_BRACKET_LABEL,
+  ageBracketFor,
+  restReasonNote,
+  warmupNote,
+  effortStyleForAge,
+  EFFORT_STYLES,
+  EFFORT_STYLE_LABEL,
+  EFFORT_LEVEL_ORDER,
+} from '../../engine/age'
+import type { Equip, EffortStyle, GoalKey } from '../../engine/types'
 import { Wrap, Card, Chip, GhostButton } from '../components/ui'
 import { deleteContactProfile, getContactProfile } from '../lib/contactProfile'
 
@@ -19,6 +28,7 @@ export default function Settings() {
   const [detailsDeleted, setDetailsDeleted] = useState(false)
 
   const bracket = ageBracketFor(profile.age)
+  const effortStyle: EffortStyle = profile.effortStyle ?? effortStyleForAge(bracket)
 
   function saveAge() {
     const trimmed = ageInput.trim()
@@ -100,7 +110,10 @@ export default function Settings() {
         Your age
       </h2>
       <Card className="p-4">
-        <p className="text-sm text-muted">Optional. Helps us adjust warm-up and recovery — never used for anything else, and you can clear it any time.</p>
+        <p className="text-sm text-muted">
+          Sets your rest times, exercise selection and default effort-label style — never used for anything else, and you can
+          change or clear it any time.
+        </p>
         <div className="mt-3 flex items-center gap-2">
           <input
             type="number"
@@ -128,6 +141,23 @@ export default function Settings() {
           </div>
         )}
       </Card>
+
+      <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
+        Effort labels
+      </h2>
+      <p className="mb-2 text-sm text-muted">
+        How the post-set effort chips are worded — the same four levels underneath, whichever style you pick.
+      </p>
+      <div className="grid gap-2">
+        {(Object.keys(EFFORT_STYLES) as EffortStyle[]).map((style) => (
+          <Chip key={style} pressed={effortStyle === style} onClick={() => updateProfile({ effortStyle: style })}>
+            <div className="font-display font-bold">{EFFORT_STYLE_LABEL[style]}</div>
+            <div className="mt-1 text-sm text-muted">
+              {EFFORT_LEVEL_ORDER.map((k) => `${EFFORT_STYLES[style][k].emoji} ${EFFORT_STYLES[style][k].label}`).join(' · ')}
+            </div>
+          </Chip>
+        ))}
+      </div>
 
       <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
         Reference

@@ -9,12 +9,12 @@ export default function SiteFooter() {
           <PlateLogo size={22} className="text-plate" />
           <span className="font-display text-lg font-bold">GymBuddy</span>
         </div>
-        <p className="mt-4 max-w-[560px] text-sm text-[#9FB0B4]">
+        <p className="mt-4 max-w-[560px] text-sm text-ash">
           GymBuddy gives general guidance for healthy adults. Stop if you feel sharp or joint pain, and ask a qualified trainer
           or doctor.
         </p>
-        <p className="mt-4 text-xs text-[#9FB0B4]">
-          Built for the PML Product Challenge. <Link to="/privacy" className="underline decoration-[#5B6B70] underline-offset-2">Privacy</Link>
+        <p className="mt-4 text-xs text-ash">
+          Built for the PML Product Challenge. <Link to="/privacy" className="underline decoration-ash underline-offset-2">Privacy</Link>
         </p>
       </div>
     </footer>

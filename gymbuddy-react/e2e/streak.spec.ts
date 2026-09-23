@@ -6,6 +6,7 @@ test('streak counts a completed week, and a rest day / unfinished new week never
   await page.goto('/app')
   await page.locator('button[aria-pressed]').first().click()
   await page.getByRole('button', { name: 'Next' }).click()
+  await page.getByLabel('Your age').fill('28')
   await page.getByRole('button', { name: 'Build my plan' }).click() // weekly target defaults to 3
   await startWorkout(page)
 

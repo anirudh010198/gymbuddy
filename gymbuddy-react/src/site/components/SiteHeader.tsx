@@ -14,7 +14,15 @@ export default function SiteHeader() {
   }
 
   return (
-    <header className="mx-auto flex max-w-[1100px] items-center justify-between px-4 py-4 sm:px-6">
+    <header className="relative mx-auto flex max-w-[1100px] items-center justify-between px-4 py-4 sm:px-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-4 top-0 h-px sm:inset-x-6"
+        style={{
+          background: 'linear-gradient(90deg, transparent, var(--red) 20%, var(--red) 80%, transparent)',
+          boxShadow: '0 0 10px var(--red-glow)',
+        }}
+      />
       <Link to="/" onClick={handleLogoClick} className="flex items-center gap-2 text-ink">
         <PlateLogo size={26} className="text-plate" />
         <span className="font-display text-xl font-extrabold">GymBuddy</span>

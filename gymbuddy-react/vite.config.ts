@@ -18,8 +18,8 @@ export default defineConfig({
         name: 'GymBuddy',
         short_name: 'GymBuddy',
         description: 'Know exactly what to do on the gym floor.',
-        theme_color: '#1E2B30',
-        background_color: '#1E2B30',
+        theme_color: '#0B0B0D',
+        background_color: '#0B0B0D',
         display: 'standalone',
         start_url: '/app',
         icons: [

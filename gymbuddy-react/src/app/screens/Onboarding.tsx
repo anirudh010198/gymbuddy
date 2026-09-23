@@ -22,6 +22,9 @@ export default function Onboarding() {
   const [target, setTarget] = useState(3)
   const [targetTouched, setTargetTouched] = useState(false)
 
+  const ageNum = age.trim() === '' ? null : Number(age)
+  const ageValid = ageNum != null && Number.isFinite(ageNum) && ageNum >= 13 && ageNum <= 100
+
   function handleAgeChange(v: string) {
     setAge(v)
     if (targetTouched) return
@@ -107,9 +110,9 @@ export default function Onboarding() {
           ))}
         </div>
         <h3 className="mb-1 mt-6 font-display font-bold" style={{ fontSize: '1.4rem' }}>
-          Your age <span className="font-sans text-sm font-normal text-muted">(optional)</span>
+          Your age
         </h3>
-        <p className="mb-2 text-sm text-muted">Helps us adjust warm-up and recovery. Skip if you'd rather not say.</p>
+        <p className="mb-2 text-sm text-muted">Helps us set your rest times and labels.</p>
         <input
           type="number"
           inputMode="numeric"
@@ -117,9 +120,8 @@ export default function Onboarding() {
           max={100}
           value={age}
           onChange={(e) => handleAgeChange(e.target.value)}
-          placeholder="Skip"
           className="w-24 rounded-xl border-2 border-line bg-card p-2.5 text-ink outline-none focus-visible:border-plate"
-          aria-label="Your age (optional)"
+          aria-label="Your age"
         />
 
         <h3 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.4rem' }}>
@@ -145,9 +147,7 @@ export default function Onboarding() {
         <p className="mt-2 text-sm text-muted">Start lower than you think. Hitting 3 beats planning 6.</p>
       </Wrap>
       <Dock>
-        <PrimaryButton
-          onClick={() => goal && completeOnboarding(goal, [...equip], target, age.trim() === '' ? null : Number(age))}
-        >
+        <PrimaryButton disabled={!goal || !ageValid} onClick={() => goal && ageValid && completeOnboarding(goal, [...equip], target, ageNum)}>
           Build my plan
         </PrimaryButton>
         <p className="mt-2 text-center text-sm text-muted">Step 2 of 2</p>

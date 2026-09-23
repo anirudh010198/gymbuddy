@@ -10,9 +10,11 @@ import { GOALS } from '../engine/goals'
 import { GROUP_LABEL } from '../engine/templates'
 import type { Group } from '../engine/types'
 
-// Feature 5: once the team has a real gym photo, set this to '/images/hero.jpg'
-// (dropped in public/images/hero.jpg) — the duotone-ish overlay treatment below
-// switches on automatically and the plate-motif fallback disappears.
+// Once the team drops a real gym photo at public/images/hero.jpg, set this to
+// '/images/hero.jpg' — the heavy dark overlay switches on automatically and
+// the neon-streak/plate-motif fallback below disappears. Left blank rather
+// than pointed at a file that doesn't exist yet, which would just show a
+// broken image.
 const HERO_IMAGE_URL = ''
 
 const HEADLINE_LINES = ['Walk in.', 'Know exactly', 'what to do.']
@@ -52,7 +54,7 @@ export default function Landing() {
     <div className="bg-bg text-ink">
       <SiteHeader />
       <main>
-      {/* HERO */}
+      {/* HERO — full-bleed cinematic dark, red neon accent */}
       <section className="relative overflow-hidden bg-rubber text-chalk">
         {HERO_IMAGE_URL ? (
           <>
@@ -64,14 +66,38 @@ export default function Landing() {
               loading="eager"
               className="absolute inset-0 h-full w-full object-cover"
             />
-            {/* 70% rubber overlay so the headline stays readable, per the design system's photo treatment. */}
-            <div className="absolute inset-0 bg-rubber/70" aria-hidden="true" />
+            {/* Heavy overlay so the headline stays crisp over a busy photo. */}
+            <div className="absolute inset-0 bg-rubber/80" aria-hidden="true" />
           </>
         ) : (
-          <PlateLogo size={440} className="pointer-events-none absolute -right-28 -top-28 text-plate/10" />
+          <>
+            {/* Ceiling-neon fallback: a bright red streak along the top edge
+                with a soft glow falling down the frame, plus the low-opacity
+                plate motif already used elsewhere in the hero. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px"
+              style={{ background: 'linear-gradient(90deg, transparent, var(--red) 20%, var(--red) 80%, transparent)' }}
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-56 opacity-60 blur-3xl"
+              style={{ background: 'linear-gradient(180deg, var(--red-glow), transparent)' }}
+            />
+            <PlateLogo size={440} className="pointer-events-none absolute -right-28 -top-28 text-plate/10" />
+          </>
         )}
         <div className="relative z-10 mx-auto max-w-[1100px] px-4 py-14 sm:px-6 lg:py-20">
-          <h1 className="font-display font-extrabold leading-[0.92]" style={{ fontSize: 'clamp(2.6rem, 6vw, 4.2rem)' }}>
+          <div
+            className="font-display font-extrabold uppercase tracking-wide text-plate"
+            style={{ fontSize: 'clamp(1.1rem, 2.4vw, 1.5rem)', textShadow: '0 0 18px var(--red-glow), 0 0 36px var(--red-glow)' }}
+          >
+            GymBuddy
+          </div>
+          <h1
+            className="mt-2 font-display font-extrabold uppercase leading-[0.9] tracking-tight"
+            style={{ fontSize: 'clamp(2.6rem, 6vw, 4.2rem)' }}
+          >
             {HEADLINE_LINES.map((line, i) => (
               <motion.span
                 key={line}
@@ -84,15 +110,13 @@ export default function Landing() {
               </motion.span>
             ))}
           </h1>
-          <p className="mt-5 max-w-[440px] text-lg text-[#C7D0D2]">
-            3 exercises a day. A backup ready when your machine is taken.
-          </p>
+          <p className="mt-5 max-w-[440px] text-lg text-ash">3 exercises a day. A backup ready when your machine is taken.</p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link to="/app" className="rounded-2xl bg-plate px-6 py-3.5 font-display text-lg font-bold text-plate-ink">
+            <Link to="/app" className="rounded-2xl bg-plate px-6 py-3.5 font-display text-lg font-bold text-plate-ink shadow-neon">
               Start today's workout
             </Link>
-            <a href="#how-it-works" className="rounded-2xl border-2 border-[#3A4a50] px-6 py-3.5 font-display text-lg font-bold text-chalk">
-              How
+            <a href="#how-it-works" className="rounded-2xl border-2 border-steel px-6 py-3.5 font-display text-lg font-bold text-chalk">
+              How it works
             </a>
           </div>
         </div>

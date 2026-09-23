@@ -9,8 +9,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const outDir = path.join(__dirname, '..', 'public', 'icons')
 mkdirSync(outDir, { recursive: true })
 
-const RUBBER = '#1E2B30'
-const PLATE = '#F2C230'
+const RUBBER = '#0B0B0D'
+const PLATE = '#E1122B'
 
 // "any" purpose: plate ring fills most of the canvas, edge to edge background.
 const anySvg = `<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
