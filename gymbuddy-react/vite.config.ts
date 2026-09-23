@@ -12,15 +12,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      // 'prompt' (not 'autoUpdate') so a waiting update surfaces as a
-      // visible "reload for the latest version" prompt (see
-      // app/components/UpdatePrompt.tsx) instead of updating silently in
-      // the background — the service worker itself still calls
-      // skipWaiting()/clientsClaim() (workbox's generateSW default,
-      // unaffected by this setting), so a stale bundle never lingers past
-      // one activation either way; this only changes whether the user sees
-      // it happen.
-      registerType: 'prompt',
+      // Keep the service worker updating in the background without a
+      // user-facing reload prompt that could cover app controls.
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'GymBuddy',

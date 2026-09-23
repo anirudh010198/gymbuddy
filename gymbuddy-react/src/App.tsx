@@ -1,7 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import ErrorBoundary from './app/components/ErrorBoundary'
-import UpdatePrompt from './app/components/UpdatePrompt'
 
 // Route-level code splitting: visiting /app alone shouldn't ship the case
 // study/team console bundles, and vice versa.
@@ -17,7 +16,6 @@ const GymRush = lazy(() => import('./pages/GymRush'))
 export default function App() {
   return (
     <ErrorBoundary>
-      <UpdatePrompt />
       <Suspense fallback={null}>
         <Routes>
           <Route path="/" element={<Landing />} />
