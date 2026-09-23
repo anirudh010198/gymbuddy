@@ -240,27 +240,8 @@ function createStorage(key: string): PersistStorage<Partial<GymState>> {
   }
 }
 
-/** Backs zustand's persist API with a plain in-memory variable instead of
- *  localStorage — nothing ever survives a reload or a fresh mount. Used for
- *  the landing page's phone-frame demo, which must always start fresh at
- *  onboarding, never resume a visitor's (or a previous visitor's) progress. */
-export function createMemoryStorage(): PersistStorage<Partial<GymState>> {
-  let value: StorageValue<Partial<GymState>> | null = null
-  return {
-    getItem: () => value,
-    setItem: (_key, v) => {
-      value = v
-    },
-    removeItem: () => {
-      value = null
-    },
-  }
-}
-
-/** Factory so the landing-page demo can mount an isolated instance under
- *  "gymbuddy.demo" without ever touching the visitor's real progress.
- *  `storage` defaults to localStorage (the real /app); pass
- *  `createMemoryStorage()` for a store that never persists at all. */
+/** `storage` defaults to localStorage, keyed by `storageKey` — the shape the
+ *  one real "gymbuddy.v1" store (below) always uses. */
 export function createGymStore(
   storageKey: string,
   storage: PersistStorage<Partial<GymState>> = createStorage(storageKey),

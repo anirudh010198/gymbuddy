@@ -1,9 +1,7 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import SiteHeader from '../site/components/SiteHeader'
 import SiteFooter from '../site/components/SiteFooter'
-import PhoneFrame from '../site/components/PhoneFrame'
 import PlateLogo from '../site/components/PlateLogo'
 import SwapDemo from '../site/components/SwapDemo'
 import { research } from '../site/lib/research'
@@ -11,9 +9,6 @@ import { EXERCISES } from '../engine/exercises'
 import { GOALS } from '../engine/goals'
 import { GROUP_LABEL } from '../engine/templates'
 import type { Group } from '../engine/types'
-import { createGymStore, createMemoryStorage } from '../store/useGymStore'
-import { GymStoreProvider } from '../store/GymStoreContext'
-import AppRoot from '../app/AppRoot'
 
 // Feature 5: once the team has a real gym photo, set this to '/images/hero.jpg'
 // (dropped in public/images/hero.jpg) — the duotone-ish overlay treatment below
@@ -49,11 +44,6 @@ function InsightCard({ title, evidence, implication }: { title: string; evidence
 
 export default function Landing() {
   const reduce = useReducedMotion()
-  // In-memory only (never localStorage) and created fresh via useState's lazy
-  // initializer, which — unlike useMemo — is a real per-mount guarantee, not
-  // just a caching hint: every time this page mounts, the demo starts over at
-  // onboarding, never resuming a visitor's (or a previous visitor's) progress.
-  const [demoStore] = useState(() => createGymStore('gymbuddy.demo', createMemoryStorage()))
 
   const interviewCount = research.interviews.length
   const funnel = research.funnel
@@ -80,39 +70,30 @@ export default function Landing() {
         ) : (
           <PlateLogo size={440} className="pointer-events-none absolute -right-28 -top-28 text-plate/10" />
         )}
-        <div className="relative z-10 mx-auto grid max-w-[1100px] gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:items-center lg:py-20">
-          <div>
-            <h1 className="font-display font-extrabold leading-[0.92]" style={{ fontSize: 'clamp(2.6rem, 6vw, 4.2rem)' }}>
-              {HEADLINE_LINES.map((line, i) => (
-                <motion.span
-                  key={line}
-                  className="block"
-                  initial={{ opacity: 0, y: reduce ? 0 : 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: reduce ? 0 : 0.4, delay: reduce ? 0 : i * 0.1, ease: 'easeOut' }}
-                >
-                  {line}
-                </motion.span>
-              ))}
-            </h1>
-            <p className="mt-5 max-w-[440px] text-lg text-[#C7D0D2]">
-              3 exercises a day. A backup ready when your machine is taken.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/app" className="rounded-2xl bg-plate px-6 py-3.5 font-display text-lg font-bold text-plate-ink">
-                Start today's workout
-              </Link>
-              <a href="#how-it-works" className="rounded-2xl border-2 border-[#3A4a50] px-6 py-3.5 font-display text-lg font-bold text-chalk">
-                How
-              </a>
-            </div>
-          </div>
-          <div className="hidden justify-self-center lg:flex">
-            <GymStoreProvider store={demoStore}>
-              <PhoneFrame width={280} height={600}>
-                <AppRoot asMain={false} />
-              </PhoneFrame>
-            </GymStoreProvider>
+        <div className="relative z-10 mx-auto max-w-[1100px] px-4 py-14 sm:px-6 lg:py-20">
+          <h1 className="font-display font-extrabold leading-[0.92]" style={{ fontSize: 'clamp(2.6rem, 6vw, 4.2rem)' }}>
+            {HEADLINE_LINES.map((line, i) => (
+              <motion.span
+                key={line}
+                className="block"
+                initial={{ opacity: 0, y: reduce ? 0 : 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: reduce ? 0 : 0.4, delay: reduce ? 0 : i * 0.1, ease: 'easeOut' }}
+              >
+                {line}
+              </motion.span>
+            ))}
+          </h1>
+          <p className="mt-5 max-w-[440px] text-lg text-[#C7D0D2]">
+            3 exercises a day. A backup ready when your machine is taken.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link to="/app" className="rounded-2xl bg-plate px-6 py-3.5 font-display text-lg font-bold text-plate-ink">
+              Start today's workout
+            </Link>
+            <a href="#how-it-works" className="rounded-2xl border-2 border-[#3A4a50] px-6 py-3.5 font-display text-lg font-bold text-chalk">
+              How
+            </a>
           </div>
         </div>
       </section>
