@@ -33,9 +33,16 @@ function reasonLabel(r: Reason) {
 }
 
 /** Same format whether logged or not — only the trailing " target" differs
- *  — so a pre-filled-but-untapped set never reads as already-done. */
-function formatSetLabel(reps: number, weight: number | null, done: boolean) {
-  const base = weight != null ? `${reps} reps · ${weight % 1 === 0 ? weight : weight.toFixed(1)} kg` : `${reps} reps`
+ *  — so a pre-filled-but-untapped set never reads as already-done.
+ *  Bodyweight exercises show "bodyweight" instead of a kg number — the
+ *  weight is real (the person's own estimated bodyweight, for volume
+ *  totals) but not something they picked for this set. */
+function formatSetLabel(reps: number, weight: number | null, done: boolean, isBodyweight: boolean) {
+  const base = isBodyweight
+    ? `${reps} reps · bodyweight`
+    : weight != null
+      ? `${reps} reps · ${weight % 1 === 0 ? weight : weight.toFixed(1)} kg`
+      : `${reps} reps`
   return done ? base : `${base} target`
 }
 
@@ -380,7 +387,7 @@ export default function Workout() {
                         className="max-w-[76px] text-center text-xs font-semibold text-muted underline decoration-line underline-offset-2"
                         onClick={() => setEditing({ itemIndex: ix, setIndex: si })}
                       >
-                        {formatSetLabel(s.reps, s.weight, s.completedAt != null)}
+                        {formatSetLabel(s.reps, s.weight, s.completedAt != null, e.equip === 'bodyweight')}
                       </button>
                     </div>
                   ))}

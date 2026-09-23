@@ -81,6 +81,10 @@ export default function RepWeightSheet({
 }) {
   const step = exercise ? weightStep(exercise, weight) : 2.5
   const w = weight ?? 0
+  // Bodyweight sets use the profile's estimated bodyweight for volume math
+  // (see engine/progress.ts resolveStartWeight) — not a per-set number the
+  // user picks, so no weight editor for these.
+  const isBodyweight = exercise?.equip === 'bodyweight'
 
   function applyAndClose(patch: { reps?: number; weight?: number | null }) {
     onChange(patch)
@@ -105,7 +109,7 @@ export default function RepWeightSheet({
                 Same as last set
               </button>
             )}
-            {weight != null && (
+            {!isBodyweight && (
               <>
                 <button
                   type="button"
@@ -162,7 +166,13 @@ export default function RepWeightSheet({
             </div>
           </div>
 
-          {weight != null && (
+          {isBodyweight && (
+            <p className="mt-5 text-sm text-muted">
+              Bodyweight — counted using your estimated bodyweight from Settings, not a number you pick per set.
+            </p>
+          )}
+
+          {!isBodyweight && (
             <div className="mt-5">
               <div className="text-sm font-semibold text-muted">Weight (kg)</div>
               <NumberScroller

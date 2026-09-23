@@ -1,5 +1,30 @@
 import { GOALS, repTargetsFor } from './goals'
-import type { Exercise, GoalKey, HistoryEntry, SetEntry } from './types'
+import { BY_ID } from './exercises'
+import type { Equip, Exercise, GoalKey, HistoryEntry, SetEntry } from './types'
+
+export const DEFAULT_BODYWEIGHT_KG = 70
+
+/** A reasonable starting weight for a genuinely first-time weighted
+ *  exercise — never left blank, so the weight picker (and the volume it
+ *  feeds) always has a real number to work from. Bodyweight exercises use
+ *  the person's own estimated bodyweight instead (see resolveStartWeight). */
+function defaultStartWeight(equip: Equip): number {
+  if (equip === 'dumbbell') return 8
+  if (equip === 'cable') return 15
+  return 20 // machine, barbell
+}
+
+/** The weight a brand-new set of this exercise should start at: last time's
+ *  weight if there is one, else a sensible default for the equipment type —
+ *  or, for a bodyweight exercise, the person's own estimated bodyweight
+ *  (profile-level, defaulting to 70kg) so "bodyweight" sets still count
+ *  toward total volume instead of silently contributing 0. */
+export function resolveStartWeight(exerciseId: string, prevWeight: number | null | undefined, bodyweightKg: number | null | undefined): number {
+  if (prevWeight != null) return prevWeight
+  const ex = BY_ID[exerciseId]
+  if (ex?.equip === 'bodyweight') return bodyweightKg ?? DEFAULT_BODYWEIGHT_KG
+  return defaultStartWeight(ex?.equip ?? 'machine')
+}
 
 /** A pending/logged set during an active workout — always has a concrete
  *  `reps` default (unlike the persisted `SetEntry`, which allows null for
@@ -27,12 +52,22 @@ export function findLastLog(history: HistoryEntry[], exerciseId: string): SetEnt
  *  set if there were fewer sets last time), or this set's own per-set target
  *  rep count (heavier/lower-rep as the set number climbs) with a blank
  *  weight on a true first time. */
-export function defaultSetsFor(exerciseId: string, goal: GoalKey, history: HistoryEntry[], setsCount: number): SetState[] {
+export function defaultSetsFor(
+  exerciseId: string,
+  goal: GoalKey,
+  history: HistoryEntry[],
+  setsCount: number,
+  bodyweightKg?: number | null,
+): SetState[] {
   const last = findLastLog(history, exerciseId)
   const targets = repTargetsFor(goal, setsCount)
   return Array.from({ length: setsCount }, (_, i) => {
     const prev = last ? (last[i] ?? last[last.length - 1]) : null
-    return { reps: prev?.reps ?? targets[i] ?? targets[targets.length - 1], weight: prev?.weight ?? null, completedAt: null }
+    return {
+      reps: prev?.reps ?? targets[i] ?? targets[targets.length - 1],
+      weight: resolveStartWeight(exerciseId, prev?.weight, bodyweightKg),
+      completedAt: null,
+    }
   })
 }
 
@@ -40,11 +75,17 @@ export function defaultSetsFor(exerciseId: string, goal: GoalKey, history: Histo
  *  repeating the last known set if there were fewer sets last time), but for
  *  a "Build my own" pick where the user chose one target-reps number
  *  themselves rather than a goal-driven per-set target curve. */
-export function customSetsFor(exerciseId: string, history: HistoryEntry[], setsCount: number, targetReps: number): SetState[] {
+export function customSetsFor(
+  exerciseId: string,
+  history: HistoryEntry[],
+  setsCount: number,
+  targetReps: number,
+  bodyweightKg?: number | null,
+): SetState[] {
   const last = findLastLog(history, exerciseId)
   return Array.from({ length: setsCount }, (_, i) => {
     const prev = last ? (last[i] ?? last[last.length - 1]) : null
-    return { reps: prev?.reps ?? targetReps, weight: prev?.weight ?? null, completedAt: null }
+    return { reps: prev?.reps ?? targetReps, weight: resolveStartWeight(exerciseId, prev?.weight, bodyweightKg), completedAt: null }
   })
 }
 

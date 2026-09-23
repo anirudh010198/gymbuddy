@@ -34,6 +34,7 @@ export default function Onboarding() {
   const completeOnboarding = useGym((s) => s.completeOnboarding)
   const [step, setStep] = useState<Step>(0)
   const [age, setAge] = useState('')
+  const [bodyweight, setBodyweight] = useState('')
   const [goal, setGoal] = useState<GoalKey | null>(null)
   const [equip, setEquip] = useState<Set<Equip>>(new Set(['machine', 'cable', 'dumbbell']))
   const [target, setTarget] = useState(3)
@@ -101,6 +102,28 @@ export default function Onboarding() {
             className="w-24 rounded-xl border-2 border-line bg-card p-2.5 text-ink outline-none focus-visible:border-plate"
             aria-label="Your age"
           />
+
+          <h2 className="mb-1 mt-6 font-display font-bold" style={{ fontSize: '1.9rem' }}>
+            Your bodyweight (optional)
+          </h2>
+          <p className="mb-4 text-muted">
+            Only used to estimate total volume for bodyweight exercises — never shown to anyone else. Skip it and we'll use
+            70kg.
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="numeric"
+              min={30}
+              max={250}
+              value={bodyweight}
+              onChange={(e) => setBodyweight(e.target.value)}
+              placeholder="70"
+              className="w-24 rounded-xl border-2 border-line bg-card p-2.5 text-ink outline-none focus-visible:border-plate"
+              aria-label="Your bodyweight in kilograms"
+            />
+            <span className="text-muted">kg</span>
+          </div>
         </Wrap>
         <StepFooter step={step}>
           <PrimaryButton disabled={!ageValid} onClick={() => setStep(2)}>
@@ -195,7 +218,14 @@ export default function Onboarding() {
         <p className="mt-2 text-sm text-muted">Start lower than you think. Hitting 3 beats planning 6.</p>
       </Wrap>
       <StepFooter step={step}>
-        <PrimaryButton onClick={() => goal && ageValid && completeOnboarding(goal, [...equip], target, ageNum)}>
+        <PrimaryButton
+          onClick={() => {
+            if (!goal || !ageValid) return
+            const bwNum = bodyweight.trim() === '' ? null : Number(bodyweight)
+            const bwValid = bwNum != null && Number.isFinite(bwNum) && bwNum >= 30 && bwNum <= 250
+            completeOnboarding(goal, [...equip], target, ageNum, bwValid ? bwNum : null)
+          }}
+        >
           Build my plan
         </PrimaryButton>
       </StepFooter>

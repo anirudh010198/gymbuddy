@@ -3,6 +3,7 @@ import { addDays, parseDate, today, weekStart } from '../engine/dates'
 import { BY_ID } from '../engine/exercises'
 import { ageBracketFor, effortStyleForAge } from '../engine/age'
 import { gymCodeFor } from '../engine/gym'
+import { DEFAULT_BODYWEIGHT_KG } from '../engine/progress'
 import type { BusyReport } from '../engine/busyMap'
 import type { Buddy } from '../engine/buddy'
 import type { Equip, EffortLabel, Exercise, Group, HistoryEntry, HistoryItemEntry, Profile, SetEntry } from '../engine/types'
@@ -50,14 +51,17 @@ function trainingWeeks(): { start: string; offsets: number[] }[] {
   ]
 }
 
-function startWeightFor(ex: Exercise): number | null {
-  if (ex.equip === 'bodyweight') return null
+function startWeightFor(ex: Exercise): number {
+  // Bodyweight sets still need a real number for volume math — see
+  // engine/progress.ts resolveStartWeight, same idea for real users.
+  if (ex.equip === 'bodyweight') return DEFAULT_BODYWEIGHT_KG
   if (ex.equip === 'dumbbell') return 8
   if (ex.equip === 'cable') return 15
   return 20 // machine, barbell
 }
 
 function weightStepFor(ex: Exercise): number {
+  if (ex.equip === 'bodyweight') return 0 // bodyweight doesn't "progress" in kg
   return ex.equip === 'dumbbell' ? 1.5 : 2.5
 }
 
@@ -67,10 +71,9 @@ function weightStepFor(ex: Exercise): number {
  *  which is also what makes exerciseHasPB() light up naturally on the most
  *  recent session of each exercise, no hardcoded PB flag needed. */
 function progressedSet(ex: Exercise, cycle: number, baseReps: number): SetEntry {
-  const weight = startWeightFor(ex)
   return {
     reps: baseReps + cycle, // +0/+1/+2 reps across the 3 cycles
-    weight: weight == null ? null : weight + weightStepFor(ex) * cycle * 2,
+    weight: startWeightFor(ex) + weightStepFor(ex) * cycle * 2,
     completedAt: null, // filled in by the caller, which knows the session's date
   }
 }
@@ -154,6 +157,7 @@ export function buildDemoSeed(): DemoSeed {
     // no location permission prompt needed to see it in action.
     gymName: DEMO_GYM_NAME,
     gymCode: DEMO_GYM_CODE,
+    bodyweightKg: DEFAULT_BODYWEIGHT_KG,
   }
 
   const active = buildDemoActive(nextGroup, picksByGroup[nextGroup], cycleSeenByGroup[nextGroup])

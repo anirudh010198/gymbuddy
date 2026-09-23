@@ -100,9 +100,11 @@ export interface GymState {
    *  whether they already have a profile. */
   introPending: boolean
 
-  completeOnboarding: (goal: GoalKey, equip: Equip[], target: number, age?: number | null) => void
+  completeOnboarding: (goal: GoalKey, equip: Equip[], target: number, age?: number | null, bodyweightKg?: number | null) => void
   changeGoal: () => void
-  updateProfile: (patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target' | 'age' | 'effortStyle' | 'gymName' | 'gymCode'>>) => void
+  updateProfile: (
+    patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target' | 'age' | 'effortStyle' | 'gymName' | 'gymCode' | 'bodyweightKg'>>,
+  ) => void
   resetData: () => void
   setPeekHome: (v: boolean) => void
   setActiveTab: (t: TabKey) => void
@@ -144,12 +146,18 @@ function setsCountFor(pick: Pick<GroupWorkoutPick, 'role'>, length: SessionLengt
   return pick.role === 'main' ? SETS : FULL_ACCESSORY_SETS
 }
 
-function itemsFromPicks(picks: GroupWorkoutPick[], length: SessionLength, goal: GoalKey, history: HistoryEntry[]): ActiveItem[] {
+function itemsFromPicks(
+  picks: GroupWorkoutPick[],
+  length: SessionLength,
+  goal: GoalKey,
+  history: HistoryEntry[],
+  bodyweightKg?: number | null,
+): ActiveItem[] {
   return picks.map((p) => ({
     pattern: p.pattern,
     id: p.id,
     swaps: [],
-    sets: defaultSetsFor(p.id, goal, history, setsCountFor(p, length)),
+    sets: defaultSetsFor(p.id, goal, history, setsCountFor(p, length), bodyweightKg),
     tipShown: false,
   }))
 }
@@ -345,7 +353,7 @@ export function createGymStore(
 
         trackEvent: (type, data) => set((s) => ({ events: appendEvent(s.events, type, data) })),
 
-        completeOnboarding: (goal, equip, target, age) => {
+        completeOnboarding: (goal, equip, target, age, bodyweightKg) => {
           const pendingGym = takePendingGym()
           const profile: Profile = {
             goal,
@@ -357,6 +365,7 @@ export function createGymStore(
             effortStyle: effortStyleForAge(ageBracketFor(age ?? null)),
             gymName: pendingGym?.name ?? null,
             gymCode: pendingGym?.code ?? null,
+            bodyweightKg: bodyweightKg ?? null,
           }
           set({ profile, postOnboardingAuthPending: true })
           get().trackEvent('onboard_done', { equip, target, age: age ?? undefined })
@@ -391,7 +400,7 @@ export function createGymStore(
           if (existing && existing.date === today() && !existing.finished) return
           const dayIndex = get().history.length
           const picks = buildGroupWorkout(group, length, profile.equip)
-          let items = itemsFromPicks(picks, length, profile.goal, get().history)
+          let items = itemsFromPicks(picks, length, profile.goal, get().history, profile.bodyweightKg)
           let busyReorderNote: string | null = null
           // Nudge the session order (not a hard reorder — same items, just
           // later) so a machine that's usually busy right now lands later
@@ -436,7 +445,7 @@ export function createGymStore(
             pattern: BY_ID[p.id].pattern,
             id: p.id,
             swaps: [],
-            sets: customSetsFor(p.id, history, p.sets, p.reps),
+            sets: customSetsFor(p.id, history, p.sets, p.reps, profile.bodyweightKg),
             tipShown: false,
           }))
           const active: Active = {
@@ -552,7 +561,7 @@ export function createGymStore(
                   // Keep this slot's original intended set count (Quick vs
                   // Full/main-vs-accessory was decided at build time) rather
                   // than recomputing it from the new exercise's own role.
-                  sets: defaultSetsFor(next.id, profile.goal, get().history, it.sets.length),
+                  sets: defaultSetsFor(next.id, profile.goal, get().history, it.sets.length, profile.bodyweightKg),
                   tipShown: false,
                   swaps: [...it.swaps, { from: it.id, to: next.id, reason }],
                 }

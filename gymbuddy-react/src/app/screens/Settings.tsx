@@ -38,6 +38,7 @@ export default function Settings() {
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null)
   const [ageInput, setAgeInput] = useState(profile.age != null ? String(profile.age) : '')
+  const [bodyweightInput, setBodyweightInput] = useState(profile.bodyweightKg != null ? String(profile.bodyweightKg) : '')
   const [hasContactProfile, setHasContactProfile] = useState(() => getContactProfile() != null)
   const [detailsDeleted, setDetailsDeleted] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -83,6 +84,26 @@ export default function Settings() {
   function clearAge() {
     setAgeInput('')
     updateProfile({ age: null })
+  }
+
+  function saveBodyweight() {
+    const trimmed = bodyweightInput.trim()
+    if (trimmed === '') {
+      updateProfile({ bodyweightKg: null })
+      return
+    }
+    const parsed = Number(trimmed)
+    if (!Number.isFinite(parsed) || parsed < 30 || parsed > 250) {
+      setBodyweightInput(profile.bodyweightKg != null ? String(profile.bodyweightKg) : '')
+      setToast('Enter a bodyweight between 30 and 250 kg.')
+      return
+    }
+    updateProfile({ bodyweightKg: parsed })
+  }
+
+  function clearBodyweight() {
+    setBodyweightInput('')
+    updateProfile({ bodyweightKg: null })
   }
 
   function deleteDetails() {
@@ -213,6 +234,35 @@ export default function Settings() {
             {bracket === '40plus' && <p className="mt-1 text-muted">We'll lean toward machine/cable exercises and a lighter starting weight where there's a choice.</p>}
           </div>
         )}
+      </Card>
+
+      <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
+        Your bodyweight
+      </h2>
+      <Card className="p-4">
+        <p className="text-sm text-muted">
+          Optional — only used to estimate total volume for bodyweight exercises (push-ups, pull-ups, etc.), which otherwise
+          have no weight to count. Defaults to 70kg when not set.
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="number"
+            min={30}
+            max={250}
+            inputMode="numeric"
+            className="w-24 rounded-xl border-2 border-line bg-card p-2.5 text-ink outline-none focus-visible:border-plate"
+            value={bodyweightInput}
+            onChange={(e) => setBodyweightInput(e.target.value)}
+            onBlur={saveBodyweight}
+            aria-label="Your bodyweight in kilograms"
+          />
+          <span className="text-muted">kg</span>
+          {profile.bodyweightKg != null && (
+            <GhostButton onClick={clearBodyweight} className="!min-h-0 w-auto px-4 py-2 text-sm">
+              Clear
+            </GhostButton>
+          )}
+        </div>
       </Card>
 
       <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>

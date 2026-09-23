@@ -143,6 +143,11 @@ export interface Profile {
    *  crowdsourced busy-machine reports across everyone at the same gym. */
   gymName?: string | null
   gymCode?: string | null
+  /** Optional, asked at onboarding — only used to estimate total volume
+   *  (reps x bodyweight) for bodyweight exercises, which otherwise have no
+   *  weight to sum. Defaults to 70kg (engine/progress.ts
+   *  DEFAULT_BODYWEIGHT_KG) wherever it's missing. */
+  bodyweightKg?: number | null
 }
 
 export interface TrackEvent {

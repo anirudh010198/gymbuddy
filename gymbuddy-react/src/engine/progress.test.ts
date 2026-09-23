@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compareToLast, defaultSetsFor, exerciseHasPB, findLastLog } from './progress'
+import { compareToLast, defaultSetsFor, exerciseHasPB, findLastLog, totalVolume } from './progress'
 import type { HistoryEntry, SetEntry } from './types'
 
 function entry(date: string, id: string, log: SetEntry[]): HistoryEntry {
@@ -20,10 +20,24 @@ describe('findLastLog / defaultSetsFor', () => {
     expect(sets.every((s) => s.completedAt === null)).toBe(true)
   })
 
-  it('falls back to the per-set rep target (heavier/lower-rep per set) with a blank weight on a true first time', () => {
+  it('falls back to the per-set rep target and a conservative equipment weight on a true first time', () => {
     const sets = defaultSetsFor('leg_press', 'muscle', [], 3)
     expect(sets.map((s) => s.reps)).toEqual([12, 10, 8]) // Build muscle's 3-set target ladder
-    expect(sets.every((s) => s.weight === null)).toBe(true)
+    expect(sets.map((s) => s.weight)).toEqual([20, 20, 20])
+  })
+
+  it('uses profile bodyweight or the 70 kg default for bodyweight exercises', () => {
+    expect(defaultSetsFor('incline_pushup', 'fit', [], 2).map((s) => s.weight)).toEqual([70, 70])
+    expect(defaultSetsFor('incline_pushup', 'fit', [], 2, 82).map((s) => s.weight)).toEqual([82, 82])
+  })
+
+  it('counts reps times weight only for completed sets, including bodyweight sets', () => {
+    expect(totalVolume([
+      { reps: 10, weight: 20, completedAt: 1 },
+      { reps: 8, weight: 70, completedAt: 2 },
+      { reps: 12, weight: 20, completedAt: null },
+      { reps: null, weight: 20, completedAt: 3 },
+    ])).toBe(760)
   })
 
   it('ignores an exercise with no completed sets in history', () => {
