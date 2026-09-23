@@ -102,6 +102,8 @@ export interface HistoryItemEntry {
   id: string
   log: SetEntry[]
   swaps: Swap[]
+  /** The post-set effort rating given during the workout, if any. */
+  effort?: EffortLabel
 }
 
 export interface HistoryEntry {

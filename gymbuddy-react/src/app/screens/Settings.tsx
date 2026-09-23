@@ -15,6 +15,8 @@ import {
 import type { Equip, EffortStyle, GoalKey } from '../../engine/types'
 import { Wrap, Card, Chip, GhostButton } from '../components/ui'
 import { deleteContactProfile, getContactProfile } from '../lib/contactProfile'
+import { useAuthStore } from '../../lib/authStore'
+import SignInButtons from '../components/SignInButtons'
 
 export default function Settings() {
   const profile = useGym((s) => s.profile)!
@@ -22,10 +24,29 @@ export default function Settings() {
   const events = useGym((s) => s.events)
   const updateProfile = useGym((s) => s.updateProfile)
   const resetData = useGym((s) => s.resetData)
+  const user = useAuthStore((s) => s.user)
+  const signOut = useAuthStore((s) => s.signOut)
+  const deleteAccount = useAuthStore((s) => s.deleteAccount)
   const [confirmReset, setConfirmReset] = useState(false)
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [deleteAccountError, setDeleteAccountError] = useState<string | null>(null)
   const [ageInput, setAgeInput] = useState(profile.age != null ? String(profile.age) : '')
   const [hasContactProfile, setHasContactProfile] = useState(() => getContactProfile() != null)
   const [detailsDeleted, setDetailsDeleted] = useState(false)
+
+  async function handleDeleteAccount() {
+    setDeletingAccount(true)
+    setDeleteAccountError(null)
+    const res = await deleteAccount()
+    setDeletingAccount(false)
+    if (!res.ok) {
+      setDeleteAccountError(res.error ?? 'Could not delete your account. Try again.')
+      return
+    }
+    deleteContactProfile()
+    resetData()
+  }
 
   const bracket = ageBracketFor(profile.age)
   const effortStyle: EffortStyle = profile.effortStyle ?? effortStyleForAge(bracket)
@@ -160,6 +181,60 @@ export default function Settings() {
       </div>
 
       <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
+        Account
+      </h2>
+      <Card className="p-4">
+        {user ? (
+          <>
+            <p className="text-sm text-muted">Signed in as</p>
+            <p className="font-semibold">{user.email}</p>
+            <p className="mt-2 text-sm text-muted">Your history syncs to your account and stays cached on this phone for offline use.</p>
+            <GhostButton className="mt-3" onClick={signOut}>
+              Sign out
+            </GhostButton>
+            <div className={`mt-3 rounded-card border-2 p-3 ${confirmDeleteAccount ? 'border-warn' : 'border-line'}`}>
+              {confirmDeleteAccount ? (
+                <>
+                  <p className="text-sm font-semibold text-warn">
+                    This permanently deletes your account and every synced workout. This can't be undone.
+                  </p>
+                  {deleteAccountError && <p className="mt-2 text-sm text-warn">{deleteAccountError}</p>}
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <GhostButton onClick={() => setConfirmDeleteAccount(false)} disabled={deletingAccount}>
+                      Cancel
+                    </GhostButton>
+                    <button
+                      type="button"
+                      disabled={deletingAccount}
+                      className="min-h-[52px] w-full rounded-2xl bg-warn font-display text-xl font-bold text-chalk transition-transform active:scale-[0.98] disabled:opacity-60"
+                      onClick={handleDeleteAccount}
+                    >
+                      {deletingAccount ? 'Deleting…' : 'Delete account'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <GhostButton onClick={() => setConfirmDeleteAccount(true)}>Delete my account and data</GhostButton>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-muted">
+              Not signed in. Your progress is saved on this phone only —{' '}
+              <Link to="/privacy" className="underline decoration-line underline-offset-2">
+                read our privacy page
+              </Link>{' '}
+              for what changes if you sign in.
+            </p>
+            <div className="mt-3">
+              <SignInButtons />
+            </div>
+          </>
+        )}
+      </Card>
+
+      <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>
         Reference
       </h2>
       <Card className="p-4">
@@ -173,7 +248,10 @@ export default function Settings() {
         Your data
       </h2>
       <Card className="p-4">
-        <p className="text-sm text-muted">Everything is saved on this phone only. Export a copy any time.</p>
+        <p className="text-sm text-muted">
+          {user ? 'Synced to your account and cached on this phone.' : 'Everything is saved on this phone only.'} Export a copy
+          any time.
+        </p>
         <GhostButton className="mt-3" onClick={exportData}>
           Export data as JSON
         </GhostButton>

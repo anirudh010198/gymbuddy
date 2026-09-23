@@ -12,34 +12,60 @@ export default function Privacy() {
           Privacy
         </h1>
         <p className="mt-3 text-muted">
-          GymBuddy is built to work without an account. Everything below only applies if you choose to fill in the optional
-          "save my progress" card after your first workout — the app works fully without it.
+          GymBuddy is built to work without an account. Signing in is entirely optional and only adds one thing: your workout
+          history syncing across your devices. Everything below explains the two separate, optional ways GymBuddy can store a
+          little more about you — you can use neither, either, or both.
         </p>
 
         <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
-          What we collect
-        </h2>
-        <p>If you fill in the optional card, we store: your first name, your age (if you choose to give it), and one contact detail — either a phone number or an email address, whichever you pick.</p>
-
-        <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
-          Why
-        </h2>
-        <p>Only to save your progress across devices in the future and to send a reminder on your gym days, if we build that. Nothing here is used for anything else, and it's never required — the app's core loop (plan, swap, log) works fully without it.</p>
-
-        <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
-          Where it lives
+          If you sign in (Google or email link)
         </h2>
         <p>
-          Right now, on your device only — in your browser's local storage, alongside your workout history. There is no
-          backend or server this data is sent to in the current build.
+          <b>What we collect:</b> your email address (from Google, or the one you type in for an email link — never a
+          password, we don't have one), plus what's already in your local plan (age, goal, equipment, weekly target,
+          effort-label style) and your workout history (dates, exercises, sets, reps, weight, and effort ratings — not swap
+          history or bonus-tip unlocks, those stay local only).
+        </p>
+        <p className="mt-2">
+          <b>Why:</b> only to restore your plan and progress if you open GymBuddy on another device, or after clearing this
+          one. Nothing here is used for anything else, and the app's core loop (plan, swap, log) works exactly the same
+          whether you sign in or not.
+        </p>
+        <p className="mt-2">
+          <b>Where it lives:</b> a Supabase-hosted database, access-restricted at the database level so only your own
+          signed-in account can ever read or write your own rows — not other users, and not us browsing a shared table.
+        </p>
+        <p className="mt-2">
+          <b>How to have it deleted:</b> open Settings → Account → "Delete my account and data". This permanently deletes
+          your account and every synced workout — it can't be undone, and there's no recovery period.
         </p>
 
         <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
-          How to have it deleted
+          If you fill in the "save my progress" card
         </h2>
         <p>
-          Open Settings in the app and tap "Delete my details" — this clears it from your device immediately. If you've
-          contacted us some other way and want anything else deleted, email us at{' '}
+          <b>What we collect:</b> your first name, your age (if you choose to give it), and one contact detail — either a
+          phone number or an email address, whichever you pick. This is separate from signing in above; it's the small
+          skippable card shown after your first workout.
+        </p>
+        <p className="mt-2">
+          <b>Why:</b> only to save your progress across devices in the future and to send a reminder on your gym days, if we
+          build that. Never required — the app's core loop works fully without it.
+        </p>
+        <p className="mt-2">
+          <b>Where it lives:</b> on your device only, in your browser's local storage. It is never sent to Supabase or
+          anywhere else, even if you're signed in.
+        </p>
+        <p className="mt-2">
+          <b>How to have it deleted:</b> open Settings and tap "Delete my details" — this clears it from your device
+          immediately.
+        </p>
+
+        <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
+          Either way
+        </h2>
+        <p>
+          If you've contacted us some other way and want anything else deleted, email{' '}
           <a className="underline decoration-line underline-offset-2" href={`mailto:${CONTACT_EMAIL}`}>
             {CONTACT_EMAIL}
           </a>{' '}

@@ -7,7 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/engine/**/*.test.ts'],
+    include: ['src/engine/**/*.test.ts', 'src/lib/**/*.test.ts'],
   },
   plugins: [
     react(),

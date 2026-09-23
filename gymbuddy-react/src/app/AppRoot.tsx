@@ -3,13 +3,15 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useGym } from '../store/GymStoreContext'
 import { today } from '../engine/dates'
 import Onboarding from './screens/Onboarding'
+import AuthStep from './screens/AuthStep'
 import Workout from './screens/Workout'
 import Summary from './screens/Summary'
 import TabsShell from './TabsShell'
 import AppTopBar from './components/AppTopBar'
 import BottomNav from './components/BottomNav'
+import SyncBridge from './components/SyncBridge'
 
-type ScreenName = 'onboarding' | 'workout' | 'summary' | 'home'
+type ScreenName = 'onboarding' | 'auth' | 'workout' | 'summary' | 'home'
 
 function useScreen(): ScreenName {
   const profile = useGym((s) => s.profile)
@@ -17,8 +19,13 @@ function useScreen(): ScreenName {
   const lastDone = useGym((s) => s.lastDone)
   const showSummary = useGym((s) => s.showSummary)
   const peekHome = useGym((s) => s.peekHome)
+  const authPending = useGym((s) => s.postOnboardingAuthPending)
 
   if (!profile) return 'onboarding'
+  // Its own flag, not just "just finished onboarding" — the profile already
+  // exists by this point, so the workout is never blocked behind it; this
+  // is purely "show the optional sign-in prompt once, right after".
+  if (authPending) return 'auth'
   if (peekHome) return 'home'
   if (active && active.date === today() && !active.finished) return 'workout'
   if (lastDone === today() && showSummary) return 'summary'
@@ -27,6 +34,7 @@ function useScreen(): ScreenName {
 
 const SCREENS: Record<ScreenName, ComponentType> = {
   onboarding: Onboarding,
+  auth: AuthStep,
   workout: Workout,
   summary: Summary,
   home: TabsShell,
@@ -73,6 +81,8 @@ export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
     window.scrollTo(0, 0)
   }, [screen])
 
+  const showChrome = screen !== 'onboarding' && screen !== 'auth'
+
   return (
     <Wrapper
       ref={(el: HTMLElement | null) => {
@@ -80,7 +90,8 @@ export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
       }}
       className="min-h-screen bg-bg font-sans text-ink"
     >
-      {screen !== 'onboarding' && <AppTopBar showExitLink={asMain} />}
+      <SyncBridge />
+      {showChrome && <AppTopBar showExitLink={asMain} />}
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={screen}
@@ -92,7 +103,7 @@ export default function AppRoot({ asMain = true }: { asMain?: boolean }) {
           <Screen />
         </motion.div>
       </AnimatePresence>
-      {screen !== 'onboarding' && <BottomNav active={activeTab} onChange={handleTabChange} />}
+      {showChrome && <BottomNav active={activeTab} onChange={handleTabChange} />}
     </Wrapper>
   )
 }

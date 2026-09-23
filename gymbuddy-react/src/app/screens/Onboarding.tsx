@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { GOALS, EQUIP_OPTIONS } from '../../engine/goals'
 import { ageBracketFor, suggestedTarget } from '../../engine/age'
@@ -13,12 +13,29 @@ const fadeSlide = {
   transition: { duration: 0.22 },
 }
 
+type Step = 0 | 1 | 2 | 3
+const TOTAL_STEPS = 4
+
+function StepFooter({ step, children }: { step: Step; children: ReactNode }) {
+  return (
+    <Dock>
+      {children}
+      <p className="mt-2 text-center text-sm text-muted">
+        Step {step + 1} of {TOTAL_STEPS}
+      </p>
+    </Dock>
+  )
+}
+
+/** welcome -> age -> goal -> equipment/days, then completeOnboarding()
+ *  hands off to the (separate, skippable) sign-in screen — see
+ *  postOnboardingAuthPending in useGymStore and app/screens/AuthStep.tsx. */
 export default function Onboarding() {
   const completeOnboarding = useGym((s) => s.completeOnboarding)
-  const [step, setStep] = useState<0 | 1>(0)
+  const [step, setStep] = useState<Step>(0)
+  const [age, setAge] = useState('')
   const [goal, setGoal] = useState<GoalKey | null>(null)
   const [equip, setEquip] = useState<Set<Equip>>(new Set(['machine', 'cable', 'dumbbell']))
-  const [age, setAge] = useState('')
   const [target, setTarget] = useState(3)
   const [targetTouched, setTargetTouched] = useState(false)
 
@@ -53,9 +70,55 @@ export default function Onboarding() {
             what to do.
           </h1>
           <p className="mt-3 text-lg text-muted">
-            Three exercises a day, with a backup ready when a machine is taken. Two questions and you're set.
+            Three exercises a day, with a backup ready when a machine is taken. A few quick questions and you're set.
           </p>
-          <h2 className="mb-3 mt-8 font-display font-bold" style={{ fontSize: '1.6rem' }}>
+        </Wrap>
+        <StepFooter step={step}>
+          <PrimaryButton onClick={() => setStep(1)}>Get started</PrimaryButton>
+        </StepFooter>
+      </motion.div>
+    )
+  }
+
+  if (step === 1) {
+    return (
+      <motion.div key="ob-1" {...fadeSlide}>
+        <Wrap>
+          <button type="button" className="mt-2 font-semibold text-muted" onClick={() => setStep(0)}>
+            Back
+          </button>
+          <h2 className="mb-1 mt-4 font-display font-bold" style={{ fontSize: '1.9rem' }}>
+            Your age
+          </h2>
+          <p className="mb-4 text-muted">Helps us set your rest times and labels.</p>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={13}
+            max={100}
+            value={age}
+            onChange={(e) => handleAgeChange(e.target.value)}
+            className="w-24 rounded-xl border-2 border-line bg-card p-2.5 text-ink outline-none focus-visible:border-plate"
+            aria-label="Your age"
+          />
+        </Wrap>
+        <StepFooter step={step}>
+          <PrimaryButton disabled={!ageValid} onClick={() => setStep(2)}>
+            Next
+          </PrimaryButton>
+        </StepFooter>
+      </motion.div>
+    )
+  }
+
+  if (step === 2) {
+    return (
+      <motion.div key="ob-2" {...fadeSlide}>
+        <Wrap>
+          <button type="button" className="mt-2 font-semibold text-muted" onClick={() => setStep(1)}>
+            Back
+          </button>
+          <h2 className="mb-3 mt-4 font-display font-bold" style={{ fontSize: '1.9rem' }}>
             What's your main goal?
           </h2>
           <div className="grid gap-3">
@@ -69,20 +132,19 @@ export default function Onboarding() {
             ))}
           </div>
         </Wrap>
-        <Dock>
-          <PrimaryButton disabled={!goal} onClick={() => setStep(1)}>
+        <StepFooter step={step}>
+          <PrimaryButton disabled={!goal} onClick={() => setStep(3)}>
             Next
           </PrimaryButton>
-          <p className="mt-2 text-center text-sm text-muted">Step 1 of 2</p>
-        </Dock>
+        </StepFooter>
       </motion.div>
     )
   }
 
   return (
-    <motion.div key="ob-1" {...fadeSlide}>
+    <motion.div key="ob-3" {...fadeSlide}>
       <Wrap>
-        <button type="button" className="mt-2 font-semibold text-muted" onClick={() => setStep(0)}>
+        <button type="button" className="mt-2 font-semibold text-muted" onClick={() => setStep(2)}>
           Back
         </button>
         <h2 className="mb-1 mt-4 font-display font-bold" style={{ fontSize: '1.9rem' }}>
@@ -109,20 +171,6 @@ export default function Onboarding() {
             </Chip>
           ))}
         </div>
-        <h3 className="mb-1 mt-6 font-display font-bold" style={{ fontSize: '1.4rem' }}>
-          Your age
-        </h3>
-        <p className="mb-2 text-sm text-muted">Helps us set your rest times and labels.</p>
-        <input
-          type="number"
-          inputMode="numeric"
-          min={13}
-          max={100}
-          value={age}
-          onChange={(e) => handleAgeChange(e.target.value)}
-          className="w-24 rounded-xl border-2 border-line bg-card p-2.5 text-ink outline-none focus-visible:border-plate"
-          aria-label="Your age"
-        />
 
         <h3 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.4rem' }}>
           Days a week you can realistically go
@@ -146,12 +194,11 @@ export default function Onboarding() {
         </div>
         <p className="mt-2 text-sm text-muted">Start lower than you think. Hitting 3 beats planning 6.</p>
       </Wrap>
-      <Dock>
-        <PrimaryButton disabled={!goal || !ageValid} onClick={() => goal && ageValid && completeOnboarding(goal, [...equip], target, ageNum)}>
+      <StepFooter step={step}>
+        <PrimaryButton onClick={() => goal && ageValid && completeOnboarding(goal, [...equip], target, ageNum)}>
           Build my plan
         </PrimaryButton>
-        <p className="mt-2 text-center text-sm text-muted">Step 2 of 2</p>
-      </Dock>
+      </StepFooter>
     </motion.div>
   )
 }

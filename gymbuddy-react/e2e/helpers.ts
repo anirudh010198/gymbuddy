@@ -23,14 +23,27 @@ export async function mockDate(page: Page, iso: string) {
   }, iso)
 }
 
-/** Completes onboarding (age is required) with the first goal option and
- *  default equipment/target, then starts a workout. */
-export async function completeOnboarding(page: Page) {
+/** Walks through onboarding (welcome -> age -> goal -> equipment/days, age
+ *  required) with the first goal option and default equipment/target, then
+ *  skips the post-onboarding sign-in screen ("Continue without an account"
+ *  — see app/screens/AuthStep.tsx), landing on Home with the day-select
+ *  sheet auto-open. Doesn't pick a day — use `completeOnboarding` for that,
+ *  or call `startWorkout`/`getByRole('button', {name: /^Build my own/})`
+ *  etc. directly from here for a test that needs a different first action. */
+export async function onboardOnly(page: Page, age = '28') {
   await page.goto('/app')
+  await page.getByRole('button', { name: 'Get started' }).click()
+  await page.getByLabel('Your age').fill(age)
+  await page.getByRole('button', { name: 'Next' }).click()
   await page.locator('button[aria-pressed]').first().click() // first goal chip
   await page.getByRole('button', { name: 'Next' }).click()
-  await page.getByLabel('Your age').fill('28')
   await page.getByRole('button', { name: 'Build my plan' }).click()
+  await page.getByRole('button', { name: 'Continue without an account' }).click()
+}
+
+/** `onboardOnly` and then starts a workout. */
+export async function completeOnboarding(page: Page) {
+  await onboardOnly(page)
   await startWorkout(page)
 }
 

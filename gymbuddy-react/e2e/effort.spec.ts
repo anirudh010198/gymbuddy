@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { completeOnboarding } from './helpers'
+import { completeOnboarding, onboardOnly } from './helpers'
 
 const EFFORT_LABELS = ['Casual Arc', 'Sigma Arc', 'God Mode', 'Aura Farming']
 
@@ -26,11 +26,7 @@ test('effort chips appear after logging a set and are visible and tappable, for 
 })
 
 test('40+ defaults to the Classic effort-label style — still all four levels, just different wording', async ({ page }) => {
-  await page.goto('/app')
-  await page.locator('button[aria-pressed]').first().click() // first goal chip
-  await page.getByRole('button', { name: 'Next' }).click()
-  await page.getByLabel('Your age').fill('55') // 40+ bracket
-  await page.getByRole('button', { name: 'Build my plan' }).click()
+  await onboardOnly(page, '55') // 40+ bracket
   // Day-select sheet auto-opens as the first thing after onboarding.
   await page.getByRole('button', { name: /^Legs/ }).click()
 

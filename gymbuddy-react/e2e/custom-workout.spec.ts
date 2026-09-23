@@ -1,11 +1,8 @@
 import { test, expect } from '@playwright/test'
+import { onboardOnly } from './helpers'
 
 test('build my own: pick exercises, set sets/reps, start, finish, and repeat the saved workout', async ({ page }) => {
-  await page.goto('/app')
-  await page.locator('button[aria-pressed]').first().click() // first goal chip
-  await page.getByRole('button', { name: 'Next' }).click()
-  await page.getByLabel('Your age').fill('28')
-  await page.getByRole('button', { name: 'Build my plan' }).click()
+  await onboardOnly(page)
 
   // The day-select sheet auto-opens as the first thing after onboarding —
   // no "Start today's workout" tap needed (that Dock button sits behind the

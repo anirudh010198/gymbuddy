@@ -67,6 +67,11 @@ export interface GymState {
   activeTab: TabKey
   /** The last "Build my own" session, so Home can offer a one-tap repeat. */
   lastCustomWorkout: SavedCustomWorkout | null
+  /** True right after onboarding finishes, until the sign-in screen is
+   *  shown and dismissed (by skipping or by a successful sign-in) — its own
+   *  transient flag rather than just "no profile yet", since the profile
+   *  already exists at this point (never blocking the workout behind it). */
+  postOnboardingAuthPending: boolean
 
   completeOnboarding: (goal: GoalKey, equip: Equip[], target: number, age?: number | null) => void
   changeGoal: () => void
@@ -74,6 +79,10 @@ export interface GymState {
   resetData: () => void
   setPeekHome: (v: boolean) => void
   setActiveTab: (t: TabKey) => void
+  dismissPostOnboardingAuth: () => void
+  /** Replaces history wholesale — used only by cloud sync to apply a
+   *  server-merged set after sign-in, never by ordinary app flow. */
+  setHistory: (history: HistoryEntry[]) => void
   /** Builds and starts today's workout for one chosen muscle group and
    *  session length — there's no more parameterless auto-build; the day
    *  is always an explicit (if one-tap) choice. */
@@ -259,9 +268,12 @@ export function createGymStore(
         peekHome: false,
         activeTab: 'today',
         lastCustomWorkout: null,
+        postOnboardingAuthPending: false,
 
         setPeekHome: (v) => set({ peekHome: v }),
         setActiveTab: (t) => set({ activeTab: t }),
+        dismissPostOnboardingAuth: () => set({ postOnboardingAuthPending: false }),
+        setHistory: (history) => set({ history }),
 
         trackEvent: (type, data) => set((s) => ({ events: appendEvent(s.events, type, data) })),
 
@@ -275,7 +287,7 @@ export function createGymStore(
             lastGroup: null,
             effortStyle: effortStyleForAge(ageBracketFor(age ?? null)),
           }
-          set({ profile })
+          set({ profile, postOnboardingAuthPending: true })
           get().trackEvent('onboard_done', { equip, target, age: age ?? undefined })
           // No more auto-starting a workout here — the day/length choice
           // (DaySelectSheet, from Home) is always an explicit step now.
@@ -295,6 +307,7 @@ export function createGymStore(
             showSummary: false,
             peekHome: false,
             lastCustomWorkout: null,
+            postOnboardingAuthPending: false,
           }),
 
         startWorkout: (group, length) => {
@@ -433,7 +446,7 @@ export function createGymStore(
           const active = get().active
           const profile = get().profile
           if (!active || !profile) return
-          const items = active.items.map((i) => ({ id: i.id, log: i.sets, swaps: i.swaps }))
+          const items = active.items.map((i) => ({ id: i.id, log: i.sets, swaps: i.swaps, effort: i.effort }))
           const sets = items.reduce((a, it) => a + it.log.filter((s) => s.completedAt != null).length, 0)
           const reps = items.reduce((a, it) => a + totalReps(it.log), 0)
           const volume = items.reduce((a, it) => a + totalVolume(it.log), 0)
