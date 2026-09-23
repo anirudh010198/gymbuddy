@@ -32,7 +32,9 @@ export default function Demo() {
       lastDone: null,
       showSummary: false,
       postOnboardingAuthPending: false,
-      peekHome: false,
+      // The sample account opens on Today; the in-progress session is
+      // available through the normal Resume action.
+      peekHome: true,
       introPending: false,
     })
     return store
