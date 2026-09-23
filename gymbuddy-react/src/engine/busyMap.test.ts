@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { forecastForSession, heatmapFor, type BusyReport } from './busyMap'
+import { forecastForSession, gymStatusNow, heatmapFor, type BusyReport } from './busyMap'
 
 function reportAt(exerciseId: string, dayOfWeek: number, hourOfDay: number): BusyReport {
   return { exerciseId, equipment: 'machine', gymCode: 'g1', dayOfWeek, hourOfDay }
@@ -44,5 +44,24 @@ describe('heatmapFor', () => {
     const reports = [reportAt('leg-press', 1, 2)]
     const { countsByEquipment } = heatmapFor(reports)
     expect(countsByEquipment.machine).toBeUndefined()
+  })
+})
+
+describe('gymStatusNow', () => {
+  const now = new Date(2026, 0, 5, 18) // Monday 18:00 -> dayOfWeek 1, hourOfDay 18
+
+  it('returns null with no data for this exact hour band, even if the gym has other data', () => {
+    const reports = [reportAt('leg-press', 1, 9), reportAt('leg-press', 1, 9), reportAt('leg-press', 1, 9)]
+    expect(gymStatusNow(reports, now)).toBeNull()
+  })
+
+  it('returns "busy" once any exercise crosses the threshold this hour', () => {
+    const reports = [reportAt('leg-press', 1, 18), reportAt('leg-press', 1, 18), reportAt('leg-press', 1, 18)]
+    expect(gymStatusNow(reports, now)).toBe('busy')
+  })
+
+  it('returns "quiet" when there is data this hour but nothing crosses the threshold', () => {
+    const reports = [reportAt('leg-press', 1, 18), reportAt('cable-row', 1, 18)]
+    expect(gymStatusNow(reports, now)).toBe('quiet')
   })
 })

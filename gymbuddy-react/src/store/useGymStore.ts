@@ -7,6 +7,7 @@ import { buildGroupWorkout, swapCandidates, type GroupWorkoutPick } from '../eng
 import { ageBracketFor, effortStyleForAge, restSecondsFor } from '../engine/age'
 import { appendEvent } from '../engine/track'
 import { localBusySource, statusFor, type BusySource } from '../engine/busyMap'
+import { takePendingGym } from '../lib/pendingGym'
 import { customSetsFor, defaultSetsFor, goalTargetReps, totalReps, totalVolume, type SetState } from '../engine/progress'
 import type {
   CustomWorkoutPick,
@@ -335,6 +336,7 @@ export function createGymStore(
         trackEvent: (type, data) => set((s) => ({ events: appendEvent(s.events, type, data) })),
 
         completeOnboarding: (goal, equip, target, age) => {
+          const pendingGym = takePendingGym()
           const profile: Profile = {
             goal,
             equip,
@@ -343,6 +345,8 @@ export function createGymStore(
             age: age ?? null,
             lastGroup: null,
             effortStyle: effortStyleForAge(ageBracketFor(age ?? null)),
+            gymName: pendingGym?.name ?? null,
+            gymCode: pendingGym?.code ?? null,
           }
           set({ profile, postOnboardingAuthPending: true })
           get().trackEvent('onboard_done', { equip, target, age: age ?? undefined })

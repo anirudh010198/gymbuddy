@@ -114,6 +114,21 @@ export function statusFor(reports: BusyReport[], exerciseId: string, when = new 
   return null
 }
 
+/** A single "is the whole gym busy right now" signal for the top-bar
+ *  indicator dot — 'busy' if any exercise has crossed the band threshold
+ *  this hour, 'quiet' if there's some data this hour but nothing crossed
+ *  it, and null (no dot — never a fabricated "quiet") when there's no data
+ *  for this exact hour band at all. */
+export function gymStatusNow(reports: BusyReport[], when = new Date()): 'busy' | 'quiet' | null {
+  const dow = when.getDay()
+  const hour = when.getHours()
+  const bandReports = reports.filter((r) => r.dayOfWeek === dow && r.hourOfDay === hour)
+  if (!bandReports.length) return null
+  const counts = new Map<string, number>()
+  for (const r of bandReports) counts.set(r.exerciseId, (counts.get(r.exerciseId) ?? 0) + 1)
+  return [...counts.values()].some((c) => c >= BAND_THRESHOLD) ? 'busy' : 'quiet'
+}
+
 /** 5am-11pm x equipment heatmap cell counts, for /gym-rush. Grouped by
  *  equipment (not individual exercise) — hour-of-day only, not split by
  *  day-of-week too, since with realistically small sample sizes a day x

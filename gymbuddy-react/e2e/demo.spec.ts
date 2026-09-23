@@ -30,12 +30,40 @@ test('demo mode shows a seeded 3-week-old account, never touches real data, and 
 
   // Settings: the sample gym is already set.
   await page.getByRole('button', { name: 'Settings', exact: true }).click()
-  await expect(page.getByText('Iron Temple Fitness')).toBeVisible()
+  await expect(page.getByText('Iron Temple Fitness').first()).toBeVisible()
 
-  // Exit demo lands on the real (unseeded) /app — proves the demo never
-  // touched the real localStorage-backed store.
+  // Exit demo lands on the real landing page, not just back into /app.
   await page.getByRole('link', { name: 'Exit demo' }).click()
-  await expect(page).toHaveURL(/\/app$/)
+  await expect(page).toHaveURL('http://localhost:5180/')
   await expect(page.getByRole('heading', { name: 'Walk in.' })).toBeVisible()
   await expect(page.getByText('Demo data')).toHaveCount(0)
+
+  // Proves the demo never touched the real localStorage-backed store: a
+  // fresh /app still starts at onboarding.
+  await page.goto('/app')
+  await expect(page.getByRole('button', { name: 'Get started' })).toBeVisible()
+})
+
+test('Exit demo works from every screen, and always leaves real data untouched', async ({ page }) => {
+  const destinations: { tab?: 'History' | 'Settings' }[] = [{}, { tab: 'History' }, { tab: 'Settings' }]
+
+  for (const { tab } of destinations) {
+    await page.goto('/')
+    await page.getByRole('link', { name: /See a 3-week-old account/ }).click()
+    await expect(page.getByText('Demo data')).toBeVisible()
+
+    if (tab) {
+      await page.getByRole('button', { name: 'Go to Today' }).click()
+      await page.getByRole('button', { name: tab, exact: true }).click()
+    }
+
+    await expect(page.getByRole('link', { name: 'Exit demo' })).toBeVisible()
+    await page.getByRole('link', { name: 'Exit demo' }).click()
+    await expect(page).toHaveURL('http://localhost:5180/')
+    await expect(page.getByText('Demo data')).toHaveCount(0)
+  }
+
+  // After all that demo activity, the real account is still untouched.
+  await page.goto('/app')
+  await expect(page.getByRole('button', { name: 'Get started' })).toBeVisible()
 })

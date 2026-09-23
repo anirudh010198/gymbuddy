@@ -52,7 +52,7 @@ export default function Landing() {
 
   return (
     <div className="bg-bg text-ink">
-      <SiteHeader />
+      <SiteHeader showFindGym />
       <main>
       {/* HERO — full-bleed cinematic dark, red neon accent */}
       <section className="relative overflow-hidden bg-rubber text-chalk">

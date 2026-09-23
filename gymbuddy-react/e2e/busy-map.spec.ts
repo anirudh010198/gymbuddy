@@ -13,7 +13,7 @@ async function setGymManually(page: import('@playwright/test').Page, name: strin
   await page.getByRole('button', { name: "Enter my gym's name instead" }).click()
   await page.getByLabel('Gym name').fill(name)
   await page.getByRole('button', { name: 'Save' }).click()
-  await expect(page.getByText(name)).toBeVisible()
+  await expect(page.getByText(name).first()).toBeVisible()
   await page.getByRole('button', { name: 'Today', exact: true }).click()
 }
 

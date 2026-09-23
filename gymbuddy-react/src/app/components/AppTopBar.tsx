@@ -1,14 +1,19 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useGym } from '../../store/GymStoreContext'
+import { useBusySource } from '../../store/BusySourceContext'
+import { gymStatusNow } from '../../engine/busyMap'
 import PlateLogo from '../../site/components/PlateLogo'
+import FindGymSheet from './FindGymSheet'
 
 /** Persistent across every /app screen (onboarding excepted — no profile to
  *  route to yet) so there's always a way out without the browser back
- *  button: the logo jumps to Today, the exit link leaves the app. In demo
- *  mode (see pages/Demo.tsx) that link becomes "Exit demo" back to the real
- *  /app instead of "Home" to the landing page, and a persistent "Demo data"
- *  badge shows underneath — always-visible, never confusable with a real
- *  account. */
+ *  button: the logo jumps to Today, the right-hand link leaves the app
+ *  (or, in demo mode, exits back to the real landing page). The centre slot
+ *  is the always-visible "Find my gym" entry point — a name (with a
+ *  busy/quiet dot once there's data) or "Set your gym" — tap either to open
+ *  the same picker used in Settings. In demo mode a full-width "Demo data"
+ *  bar always shows underneath, never confusable with a real account. */
 export default function AppTopBar({
   showExitLink = true,
   demo = false,
@@ -18,6 +23,14 @@ export default function AppTopBar({
 }) {
   const setPeekHome = useGym((s) => s.setPeekHome)
   const setActiveTab = useGym((s) => s.setActiveTab)
+  const profile = useGym((s) => s.profile)
+  const updateProfile = useGym((s) => s.updateProfile)
+  const trackEvent = useGym((s) => s.trackEvent)
+  const busySource = useBusySource()
+  const [findGymOpen, setFindGymOpen] = useState(false)
+
+  const gymCode = profile?.gymCode
+  const status = gymCode ? gymStatusNow(busySource.all(gymCode)) : null
 
   function goToday() {
     setActiveTab('today')
@@ -25,23 +38,60 @@ export default function AppTopBar({
   }
 
   return (
+    <>
     <div className="sticky top-0 z-30 border-b border-line bg-bg">
-      <div className="mx-auto flex max-w-[480px] items-center justify-between px-4 py-3">
-        <button type="button" onClick={goToday} className="flex items-center gap-2 text-ink" aria-label="Go to Today">
-          <PlateLogo size={24} className="text-plate" />
-          <span className="font-display text-lg font-extrabold">GymBuddy</span>
+      <div className="mx-auto flex max-w-[480px] items-center gap-2 px-3 py-3 sm:px-4">
+        <button
+          type="button"
+          onClick={goToday}
+          className="flex shrink-0 items-center gap-1.5 text-ink"
+          aria-label="Go to Today"
+        >
+          <PlateLogo size={22} className="text-plate" />
+          <span className="hidden font-display text-lg font-extrabold min-[400px]:inline">GymBuddy</span>
         </button>
-        {showExitLink && (
-          <Link to={demo ? '/app' : '/'} className="text-sm font-semibold text-muted hover:text-ink">
-            {demo ? 'Exit demo' : 'Home'}
+        <button
+          type="button"
+          onClick={() => setFindGymOpen(true)}
+          className="flex min-w-0 flex-1 items-center justify-center gap-1.5 truncate rounded-full border border-line px-2.5 py-1.5 text-sm font-semibold text-ink"
+        >
+          {status && (
+            <span
+              aria-hidden="true"
+              className={`h-2 w-2 shrink-0 rounded-full ${status === 'busy' ? 'bg-warn' : 'bg-go'}`}
+            />
+          )}
+          <span className="truncate">{profile?.gymName ?? 'Set your gym'}</span>
+          {status && <span className="sr-only">{status === 'busy' ? ', busy right now' : ', quiet right now'}</span>}
+        </button>
+        {showExitLink && !demo && (
+          <Link to="/" className="shrink-0 text-sm font-semibold text-muted hover:text-ink">
+            Home
           </Link>
         )}
       </div>
       {demo && (
-        <div className="mx-auto max-w-[480px] px-4 pb-2">
-          <span className="inline-block rounded-full bg-plate px-2.5 py-1 text-xs font-bold text-plate-ink">Demo data</span>
+        <div className="mx-auto flex max-w-[480px] items-center justify-between gap-2 px-3 pb-2 sm:px-4">
+          <span className="truncate rounded-full bg-plate px-2.5 py-1 text-xs font-bold text-plate-ink">
+            Demo data — this is a sample account
+          </span>
+          <Link
+            to="/"
+            className="shrink-0 rounded-xl border-2 border-line px-3 py-1.5 text-xs font-bold text-ink hover:border-plate"
+          >
+            Exit demo
+          </Link>
         </div>
       )}
     </div>
+    <FindGymSheet
+      open={findGymOpen}
+      onPick={(name, code, method) => {
+        updateProfile({ gymName: name, gymCode: code })
+        trackEvent('gym_located', { method })
+      }}
+      onClose={() => setFindGymOpen(false)}
+    />
+    </>
   )
 }
