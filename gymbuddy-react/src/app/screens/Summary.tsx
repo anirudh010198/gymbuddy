@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { motion, useReducedMotion } from 'framer-motion'
 import { useGym } from '../../store/GymStoreContext'
 import { useBuddySource } from '../../store/BuddySourceContext'
 import { streakWeeks, weekCount } from '../../engine/streak'
@@ -36,6 +37,7 @@ export default function Summary() {
   const [buddy, setBuddy] = useState(() => buddySource.getBuddy())
   const [nudging, setNudging] = useState(false)
   const [nudged, setNudged] = useState(false)
+  const reduceMotion = useReducedMotion()
 
   useEffect(() => {
     setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function')
@@ -160,16 +162,19 @@ export default function Summary() {
       </Card>
 
       <Card className="mt-4 flex items-center gap-4 p-4">
-        <div
+        <motion.div
           role="img"
           aria-label={effortTotal ? `Effort ring: ${effortNames.map((name, i) => `${name} ${effortCounts[i]}`).join(', ')}` : 'No effort ratings logged'}
           className="grid h-28 w-28 shrink-0 place-items-center rounded-full p-2"
           style={{ background: effortRing }}
+          initial={{ scale: reduceMotion ? 1 : 0.82, opacity: 0.7 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: reduceMotion ? 0 : 0.35, ease: 'easeOut' }}
         >
           <div className="grid h-full w-full place-items-center rounded-full bg-card text-center">
             <span className="px-1 text-xs font-bold text-muted">{effortTotal ? `${effortTotal} rated` : 'No ratings'}</span>
           </div>
-        </div>
+        </motion.div>
         <div className="min-w-0">
           <h2 className="font-display font-bold" style={{ fontSize: '1.2rem' }}>Effort mix</h2>
           <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">

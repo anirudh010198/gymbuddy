@@ -87,7 +87,14 @@ export default function FindGymSheet({
         </>
       )}
 
-      {step === 'searching' && <p className="text-muted">Looking for gyms nearby…</p>}
+      {step === 'searching' && (
+        <div role="status" aria-label="Loading nearby gyms" className="mt-4 grid gap-3">
+          <p className="text-muted">Looking for gyms nearby…</p>
+          {[0, 1, 2].map((key) => (
+            <div key={key} aria-hidden="true" className="h-14 animate-pulse rounded-2xl border border-line bg-soft" />
+          ))}
+        </div>
+      )}
 
       {step === 'results' && (
         <>
