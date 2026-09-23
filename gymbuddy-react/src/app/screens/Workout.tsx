@@ -31,9 +31,11 @@ function reasonLabel(r: Reason) {
   return r === 'busy' ? 'equipment busy' : r === 'unsure' ? "wasn't sure how" : 'felt uncomfortable'
 }
 
-function formatSetLabel(reps: number, weight: number | null) {
-  const r = `${reps}`
-  return weight != null ? `${r} × ${weight % 1 === 0 ? weight : weight.toFixed(1)}kg` : `${r} reps`
+/** Same format whether logged or not — only the trailing " target" differs
+ *  — so a pre-filled-but-untapped set never reads as already-done. */
+function formatSetLabel(reps: number, weight: number | null, done: boolean) {
+  const base = weight != null ? `${reps} reps · ${weight % 1 === 0 ? weight : weight.toFixed(1)} kg` : `${reps} reps`
+  return done ? base : `${base} target`
 }
 
 export default function Workout() {
@@ -158,6 +160,7 @@ export default function Workout() {
   const editingItem = editing ? active.items[editing.itemIndex] : null
   const editingExercise = editingItem ? BY_ID[editingItem.id] : null
   const editingSet = editing ? editingItem!.sets[editing.setIndex] : null
+  const editingLastSet = editing && editing.setIndex > 0 ? editingItem!.sets[editing.setIndex - 1] : null
 
   // Where to find the exercise the current rest is counting down into — the
   // next un-logged set on the same exercise if there is one, else the name
@@ -394,10 +397,10 @@ export default function Workout() {
                       </div>
                       <button
                         type="button"
-                        className="text-xs font-semibold text-muted underline decoration-line underline-offset-2"
+                        className="max-w-[76px] text-center text-xs font-semibold text-muted underline decoration-line underline-offset-2"
                         onClick={() => setEditing({ itemIndex: ix, setIndex: si })}
                       >
-                        {formatSetLabel(s.reps, s.weight)}
+                        {formatSetLabel(s.reps, s.weight, s.completedAt != null)}
                       </button>
                     </div>
                   ))}
@@ -469,6 +472,7 @@ export default function Workout() {
         exercise={editingExercise}
         reps={editingSet?.reps ?? 0}
         weight={editingSet?.weight ?? null}
+        lastSet={editingLastSet}
         onChange={(patch) => editing && setSetValues(editing.itemIndex, editing.setIndex, patch)}
         onClose={() => setEditing(null)}
       />
