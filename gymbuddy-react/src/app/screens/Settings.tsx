@@ -27,6 +27,7 @@ export default function Settings() {
   const history = useGym((s) => s.history)
   const events = useGym((s) => s.events)
   const updateProfile = useGym((s) => s.updateProfile)
+  const showIntroAgain = useGym((s) => s.showIntroAgain)
   const user = useAuthStore((s) => s.user)
   const signOut = useAuthStore((s) => s.signOut)
   const deleteAccount = useAuthStore((s) => s.deleteAccount)
@@ -293,6 +294,13 @@ export default function Settings() {
           Browse all exercises →
         </Link>
         <p className="mt-1 text-sm text-muted">Search and filter the full library, with the same form guide shown mid-workout.</p>
+        <button
+          type="button"
+          className="mt-3 text-sm font-semibold underline decoration-line underline-offset-2"
+          onClick={showIntroAgain}
+        >
+          Show intro again
+        </button>
       </Card>
 
       <h2 className="mb-2 mt-6 font-display font-bold" style={{ fontSize: '1.3rem' }}>

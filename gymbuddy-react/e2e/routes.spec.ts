@@ -9,7 +9,7 @@ import { test, expect } from '@playwright/test'
  *  see the final report. */
 const ROUTES: { path: string; heading: RegExp }[] = [
   { path: '/', heading: /Walk in\./ },
-  { path: '/app', heading: /Walk in\.|Today|Warm up|Nice work/ },
+  { path: '/app', heading: /Never wonder what to do|Walk in\.|Today|Warm up|Nice work/ },
   { path: '/demo', heading: /Legs day|Push day|Pull day/ },
   { path: '/exercises', heading: /All exercises/ },
   { path: '/case-study', heading: /./ },

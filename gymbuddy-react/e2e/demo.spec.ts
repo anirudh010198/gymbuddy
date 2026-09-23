@@ -41,6 +41,7 @@ test('demo mode shows a seeded 3-week-old account, never touches real data, and 
   // Proves the demo never touched the real localStorage-backed store: a
   // fresh /app still starts at onboarding.
   await page.goto('/app')
+  await page.getByRole('button', { name: 'Skip' }).click()
   await expect(page.getByRole('button', { name: 'Get started' })).toBeVisible()
 })
 
@@ -65,5 +66,6 @@ test('Exit demo works from every screen, and always leaves real data untouched',
 
   // After all that demo activity, the real account is still untouched.
   await page.goto('/app')
+  await page.getByRole('button', { name: 'Skip' }).click()
   await expect(page.getByRole('button', { name: 'Get started' })).toBeVisible()
 })

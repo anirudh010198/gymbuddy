@@ -32,6 +32,9 @@ export async function mockDate(page: Page, iso: string) {
  *  etc. directly from here for a test that needs a different first action. */
 export async function onboardOnly(page: Page, age = '28') {
   await page.goto('/app')
+  // A brand-new device sees the one-time 3-card intro before onboarding —
+  // skip it so every other helper/test can assume onboarding is first.
+  await page.getByRole('button', { name: 'Skip' }).click()
   await page.getByRole('button', { name: 'Get started' }).click()
   await page.getByLabel('Your age').fill(age)
   await page.getByRole('button', { name: 'Next' }).click()

@@ -28,8 +28,10 @@ test('reset all data: confirm, clears everything, and the app is genuinely back 
   await expect(page.getByRole('heading', { name: 'Walk in.' })).toBeVisible()
 
   // And the reset is real, not just a visual reset: /app shows onboarding
-  // from scratch, with zero history — not a stale in-memory profile.
+  // from scratch, with zero history — not a stale in-memory profile. The
+  // reset also sweeps the "seen the intro" flag, so it shows once more too.
   await page.goto('/app')
+  await page.getByRole('button', { name: 'Skip' }).click()
   await expect(page.getByRole('button', { name: 'Get started' })).toBeVisible()
   const buddy = await page.evaluate(() => localStorage.getItem('gymbuddy.buddy'))
   expect(buddy).toBeNull()

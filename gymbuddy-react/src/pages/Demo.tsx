@@ -33,6 +33,7 @@ export default function Demo() {
       showSummary: false,
       postOnboardingAuthPending: false,
       peekHome: false,
+      introPending: false,
     })
     return store
   })

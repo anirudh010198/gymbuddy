@@ -2,6 +2,7 @@ import { useEffect, useRef, type ComponentType } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useGym } from '../store/GymStoreContext'
 import { today } from '../engine/dates'
+import Intro from './screens/Intro'
 import Onboarding from './screens/Onboarding'
 import AuthStep from './screens/AuthStep'
 import Workout from './screens/Workout'
@@ -12,7 +13,7 @@ import AppTopBar from './components/AppTopBar'
 import BottomNav from './components/BottomNav'
 import SyncBridge from './components/SyncBridge'
 
-type ScreenName = 'onboarding' | 'auth' | 'workout' | 'cooldown' | 'summary' | 'home'
+type ScreenName = 'intro' | 'onboarding' | 'auth' | 'workout' | 'cooldown' | 'summary' | 'home'
 
 function useScreen(): ScreenName {
   const profile = useGym((s) => s.profile)
@@ -22,7 +23,12 @@ function useScreen(): ScreenName {
   const peekHome = useGym((s) => s.peekHome)
   const authPending = useGym((s) => s.postOnboardingAuthPending)
   const cooldownPending = useGym((s) => s.cooldownPending)
+  const introPending = useGym((s) => s.introPending)
 
+  // Checked before even onboarding: a brand-new device sees it first, and
+  // an existing user who asked Settings to "show it again" sees it too,
+  // profile or not.
+  if (introPending) return 'intro'
   if (!profile) return 'onboarding'
   // Its own flag, not just "just finished onboarding" — the profile already
   // exists by this point, so the workout is never blocked behind it; this
@@ -39,6 +45,7 @@ function useScreen(): ScreenName {
 }
 
 const SCREENS: Record<ScreenName, ComponentType> = {
+  intro: Intro,
   onboarding: Onboarding,
   auth: AuthStep,
   workout: Workout,
@@ -87,7 +94,7 @@ export default function AppRoot({ asMain = true, demo = false }: { asMain?: bool
     window.scrollTo(0, 0)
   }, [screen])
 
-  const showChrome = screen !== 'onboarding' && screen !== 'auth'
+  const showChrome = screen !== 'onboarding' && screen !== 'auth' && screen !== 'intro'
 
   return (
     <Wrapper

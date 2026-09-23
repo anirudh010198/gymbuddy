@@ -8,6 +8,7 @@ import { ageBracketFor, effortStyleForAge, restSecondsFor } from '../engine/age'
 import { appendEvent } from '../engine/track'
 import { localBusySource, statusFor, type BusySource } from '../engine/busyMap'
 import { takePendingGym } from '../lib/pendingGym'
+import { hasSeenIntro, markIntroSeen } from '../lib/introSeen'
 import { customSetsFor, defaultSetsFor, goalTargetReps, totalReps, totalVolume, type SetState } from '../engine/progress'
 import type {
   CustomWorkoutPick,
@@ -92,6 +93,12 @@ export interface GymState {
    *  card is dismissed — history/streak/PBs are already committed by then
    *  (finishWorkout runs first), this just gates the interstitial screen. */
   cooldownPending: boolean
+  /** The 3-card "what is GymBuddy" explainer — true once for a brand-new
+   *  device (see lib/introSeen.ts), or any time Settings' "Show intro
+   *  again" sets it back on. Checked before even the onboarding screen, so
+   *  a returning user who asks to see it again gets it regardless of
+   *  whether they already have a profile. */
+  introPending: boolean
 
   completeOnboarding: (goal: GoalKey, equip: Equip[], target: number, age?: number | null) => void
   changeGoal: () => void
@@ -117,6 +124,8 @@ export interface GymState {
   skipRest: () => void
   extendRest: (seconds: number) => void
   dismissCooldown: () => void
+  dismissIntro: () => void
+  showIntroAgain: () => void
   logSet: (itemIndex: number, setIndex: number) => void
   setSetValues: (itemIndex: number, setIndex: number, patch: { reps?: number; weight?: number | null }) => void
   setEffort: (itemIndex: number, effort: EffortLabel) => void
@@ -327,6 +336,7 @@ export function createGymStore(
         lastCustomWorkout: null,
         postOnboardingAuthPending: false,
         cooldownPending: false,
+        introPending: !hasSeenIntro(),
 
         setPeekHome: (v) => set({ peekHome: v }),
         setActiveTab: (t) => set({ activeTab: t }),
@@ -370,6 +380,7 @@ export function createGymStore(
             lastCustomWorkout: null,
             postOnboardingAuthPending: false,
             cooldownPending: false,
+            introPending: !hasSeenIntro(),
           }),
 
         startWorkout: (group, length) => {
@@ -453,6 +464,12 @@ export function createGymStore(
           }),
 
         dismissCooldown: () => set({ cooldownPending: false }),
+
+        dismissIntro: () => {
+          markIntroSeen()
+          set({ introPending: false })
+        },
+        showIntroAgain: () => set({ introPending: true }),
 
         logSet: (itemIndex, setIndex) => {
           const active = get().active

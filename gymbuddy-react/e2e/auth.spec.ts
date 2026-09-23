@@ -10,6 +10,7 @@ import { test, expect } from '@playwright/test'
 
 test('the sign-in screen is the first thing after onboarding, and skipping it never blocks the workout', async ({ page }) => {
   await page.goto('/app')
+  await page.getByRole('button', { name: 'Skip' }).click()
   await page.getByRole('button', { name: 'Get started' }).click()
   await page.getByLabel('Your age').fill('28')
   await page.getByRole('button', { name: 'Next' }).click()
@@ -32,6 +33,7 @@ test('the sign-in screen is the first thing after onboarding, and skipping it ne
 
 test('Settings shows "not signed in" with the same graceful degradation when accounts are unconfigured', async ({ page }) => {
   await page.goto('/app')
+  await page.getByRole('button', { name: 'Skip' }).click()
   await page.getByRole('button', { name: 'Get started' }).click()
   await page.getByLabel('Your age').fill('28')
   await page.getByRole('button', { name: 'Next' }).click()
