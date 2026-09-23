@@ -12,6 +12,7 @@ const Team = lazy(() => import('./pages/Team'))
 const Exercises = lazy(() => import('./pages/Exercises'))
 const Privacy = lazy(() => import('./pages/Privacy'))
 const Demo = lazy(() => import('./pages/Demo'))
+const GymRush = lazy(() => import('./pages/GymRush'))
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/exercises" element={<Exercises />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/demo" element={<Demo />} />
+          <Route path="/gym-rush" element={<GymRush />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>

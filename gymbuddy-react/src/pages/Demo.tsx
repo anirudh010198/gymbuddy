@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { createGymStore, createMemoryStorage } from '../store/useGymStore'
 import { GymStoreProvider } from '../store/GymStoreContext'
+import { BusySourceProvider } from '../store/BusySourceContext'
+import { createMemoryBusySource } from '../engine/busyMap'
 import { buildDemoSeed } from '../lib/demoSeed'
 import AppRoot from '../app/AppRoot'
 
@@ -13,9 +15,13 @@ export default function Demo() {
   // useState's lazy initializer, not useMemo — a real per-mount guarantee
   // (matching the app's other from-scratch-every-mount stores), so this
   // never resumes a stale demo session.
-  const [demoStore] = useState(() => {
-    const store = createGymStore('gymbuddy.demo', createMemoryStorage())
+  const [demoBusySource] = useState(() => {
     const seed = buildDemoSeed()
+    return { source: createMemoryBusySource(seed.busyReports), seed }
+  })
+  const [demoStore] = useState(() => {
+    const store = createGymStore('gymbuddy.demo', createMemoryStorage(), demoBusySource.source)
+    const seed = demoBusySource.seed
     store.setState({
       profile: seed.profile,
       history: seed.history,
@@ -30,7 +36,9 @@ export default function Demo() {
 
   return (
     <GymStoreProvider store={demoStore}>
-      <AppRoot demo />
+      <BusySourceProvider source={demoBusySource.source}>
+        <AppRoot demo />
+      </BusySourceProvider>
     </GymStoreProvider>
   )
 }

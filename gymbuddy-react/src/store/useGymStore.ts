@@ -6,6 +6,7 @@ import { today } from '../engine/dates'
 import { buildGroupWorkout, swapCandidates, type GroupWorkoutPick } from '../engine/swap'
 import { ageBracketFor, effortStyleForAge, restSecondsFor } from '../engine/age'
 import { appendEvent } from '../engine/track'
+import { localBusySource, statusFor, type BusySource } from '../engine/busyMap'
 import { customSetsFor, defaultSetsFor, goalTargetReps, totalReps, totalVolume, type SetState } from '../engine/progress'
 import type {
   CustomWorkoutPick,
@@ -58,6 +59,10 @@ export interface Active {
   restUntil?: number | null
   /** Which item the current rest is for, so the UI can say what's next. */
   restForItemIndex?: number | null
+  /** Set once at build time when the session order was nudged because an
+   *  exercise looked "usually busy right now" per the gym's crowdsourced
+   *  busy data — see startWorkout. Purely explanatory, shown once. */
+  busyReorderNote?: string | null
 }
 
 export type SwapOutcome = { ok: true; exercise: Exercise; reason: Reason } | { ok: false }
@@ -89,7 +94,7 @@ export interface GymState {
 
   completeOnboarding: (goal: GoalKey, equip: Equip[], target: number, age?: number | null) => void
   changeGoal: () => void
-  updateProfile: (patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target' | 'age' | 'effortStyle'>>) => void
+  updateProfile: (patch: Partial<Pick<Profile, 'goal' | 'equip' | 'target' | 'age' | 'effortStyle' | 'gymName' | 'gymCode'>>) => void
   resetData: () => void
   setPeekHome: (v: boolean) => void
   setActiveTab: (t: TabKey) => void
@@ -214,6 +219,7 @@ function sanitizeActive(raw: unknown, goal: GoalKey | undefined): Active | null 
     warmupShown: a.warmupShown as boolean | undefined,
     restUntil: a.restUntil as number | null | undefined,
     restForItemIndex: a.restForItemIndex as number | null | undefined,
+    busyReorderNote: a.busyReorderNote as string | null | undefined,
   }
 }
 
@@ -297,10 +303,14 @@ export function createMemoryStorage(): PersistStorage<Partial<GymState>> {
 }
 
 /** `storage` defaults to localStorage, keyed by `storageKey` — the shape the
- *  one real "gymbuddy.v1" store (below) always uses. */
+ *  one real "gymbuddy.v1" store (below) always uses. `busySource` likewise
+ *  defaults to the real gymbuddy.busy localStorage — /demo passes an
+ *  in-memory one so its simulated "it's busy" swaps (and the session
+ *  ordering bias they can trigger) never touch real busy-map data. */
 export function createGymStore(
   storageKey: string,
   storage: PersistStorage<Partial<GymState>> = createStorage(storageKey),
+  busySource: BusySource = localBusySource,
 ): UseBoundStore<StoreApi<GymState>> {
   return create<GymState>()(
     persist(
@@ -366,13 +376,33 @@ export function createGymStore(
           if (existing && existing.date === today() && !existing.finished) return
           const dayIndex = get().history.length
           const picks = buildGroupWorkout(group, length, profile.equip)
+          let items = itemsFromPicks(picks, length, profile.goal, get().history)
+          let busyReorderNote: string | null = null
+          // Nudge the session order (not a hard reorder — same items, just
+          // later) so a machine that's usually busy right now lands later
+          // in the session instead of first, when there's enough gym data
+          // to say anything about it at all.
+          if (profile.gymCode) {
+            const reports = busySource.all(profile.gymCode)
+            const busyNow = items.filter((it) => statusFor(reports, it.id) === 'busy')
+            if (busyNow.length) {
+              const rest = items.filter((it) => statusFor(reports, it.id) !== 'busy')
+              items = [...rest, ...busyNow]
+              const first = BY_ID[busyNow[0].id].name
+              busyReorderNote =
+                busyNow.length === 1
+                  ? `We moved ${first} later — it's usually busy right now.`
+                  : `We moved ${first} and ${busyNow.length - 1} other${busyNow.length > 2 ? 's' : ''} later — usually busy right now.`
+            }
+          }
           const active: Active = {
             date: today(),
             dayIndex,
             startedAt: Date.now(),
             group,
             length,
-            items: itemsFromPicks(picks, length, profile.goal, get().history),
+            items,
+            busyReorderNote,
           }
           set({ active })
           get().trackEvent('workout_generated', { dayIndex, group, length })

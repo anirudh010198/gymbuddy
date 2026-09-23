@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useGym } from '../../store/GymStoreContext'
 import { BY_ID } from '../../engine/exercises'
@@ -6,6 +6,8 @@ import { GROUP_LABEL } from '../../engine/templates'
 import { GOALS } from '../../engine/goals'
 import { QUICK_SESSION_SIZE, FULL_SESSION_SIZE } from '../../engine/swap'
 import { equipSectionLabel } from '../../engine/warmup'
+import { reportBusyNow, forecastForSession, statusFor } from '../../engine/busyMap'
+import { useBusySource } from '../../store/BusySourceContext'
 import { findLastLog, formatLastTime, isPB } from '../../engine/progress'
 import { ageBracketFor, restSecondsFor, restReasonNote, startWeightNote, effortStyleForAge, EFFORT_STYLES, EFFORT_LEVEL_ORDER } from '../../engine/age'
 import type { Exercise, Group, Reason } from '../../engine/types'
@@ -47,7 +49,13 @@ export default function Workout() {
   const dismissWarmup = useGym((s) => s.dismissWarmup)
   const skipRest = useGym((s) => s.skipRest)
   const extendRest = useGym((s) => s.extendRest)
+  const trackEvent = useGym((s) => s.trackEvent)
   const reduce = useReducedMotion()
+
+  const busySource = useBusySource()
+  // Busy-Machine Map: read once per mount — good enough for a same-session
+  // forecast, and avoids re-reading localStorage on every render.
+  const [busyReports] = useState(() => (profile.gymCode ? busySource.all(profile.gymCode) : []))
 
   const [swapIndex, setSwapIndex] = useState<number | null>(null)
   const [changeExercise, setChangeExercise] = useState<{ itemIndex: number; reason: Reason; candidates: Exercise[] } | null>(null)
@@ -109,6 +117,11 @@ export default function Workout() {
     if (swapIndex === null) return
     const ix = swapIndex
     setSwapIndex(null)
+    if (reason === 'busy' && profile.gymCode) {
+      const it = active.items[ix]
+      reportBusyNow(busySource, profile.gymCode, it.id, BY_ID[it.id].equip)
+      trackEvent('busy_reported', { ex: it.id, gym: profile.gymCode })
+    }
     const candidates = previewSwap(ix, reason)
     if (!candidates.length) {
       setInfo({ type: 'exhausted' })
@@ -172,6 +185,14 @@ export default function Workout() {
   const sessionTarget = active.length === 'quick' ? QUICK_SESSION_SIZE : active.length === 'full' ? FULL_SESSION_SIZE : null
   const belowTarget = sessionTarget != null && active.items.length < sessionTarget
 
+  const forecast = profile.gymCode ? forecastForSession(busyReports, active.items.map((it) => it.id)) : null
+
+  useEffect(() => {
+    if (profile.gymCode) trackEvent('forecast_shown', { gym: profile.gymCode, hasData: forecast != null })
+    // Fire once per mount only — not on every busyReports/forecast recompute.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   if (!active.warmupShown) {
     return <Warmup group={active.group} ageBracket={ageBracket} onStart={dismissWarmup} onSkip={dismissWarmup} />
   }
@@ -200,6 +221,21 @@ export default function Workout() {
             Only {active.items.length} match your equipment. Add equipment in Settings for the full {sessionTarget}-exercise session.
           </p>
         )}
+        {profile.gymCode &&
+          (forecast ? (
+            <p className="mt-2 rounded-xl bg-soft p-3 text-sm">
+              <b>Right now at {profile.gymName}:</b>{' '}
+              {forecast
+                .filter((f) => f.count > 0 || f.status === 'busy')
+                .map((f) => `${BY_ID[f.exerciseId].name} usually ${f.status}`)
+                .join(' · ') || 'not enough data on today\'s exercises yet'}
+            </p>
+          ) : (
+            <p className="mt-2 rounded-xl bg-soft p-3 text-sm text-muted">
+              Still learning {profile.gymName}'s rush hours. Every "it's busy" swap teaches it.
+            </p>
+          ))}
+        {active.busyReorderNote && <p className="mt-2 text-sm text-muted">{active.busyReorderNote}</p>}
         <div className="mt-3">
           <ProgressBar pct={(done / total) * 100} />
         </div>
@@ -445,6 +481,15 @@ export default function Workout() {
       <ChangeExerciseSheet
         open={changeExercise !== null}
         candidates={changeExercise?.candidates ?? []}
+        busyStatus={
+          profile.gymCode
+            ? Object.fromEntries(
+                (changeExercise?.candidates ?? [])
+                  .map((ex) => [ex.id, statusFor(busyReports, ex.id)] as const)
+                  .filter((entry): entry is [string, 'busy' | 'free'] => entry[1] != null),
+              )
+            : undefined
+        }
         onPick={handlePick}
         onClose={() => setChangeExercise(null)}
       />

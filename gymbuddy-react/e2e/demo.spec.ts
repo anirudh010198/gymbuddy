@@ -6,11 +6,14 @@ test('demo mode shows a seeded 3-week-old account, never touches real data, and 
 
   // Lands mid-way through today's (already in-progress) session — the
   // "Demo data" badge and 4-exercise Quick session should be visible
-  // immediately, no onboarding.
+  // immediately, no onboarding, and no location-permission prompt needed:
+  // a sample gym is pre-set, so the busy-machine forecast shows right away.
   await expect(page.getByText('Demo data')).toBeVisible()
   await expect(page.getByRole('link', { name: 'Exit demo' })).toBeVisible()
   const cards = page.locator('section[aria-label]')
   await expect(cards).toHaveCount(4)
+  await expect(page.getByText(/Right now at Iron Temple Fitness:/)).toBeVisible()
+  await expect(page.getByText(/usually busy/)).toBeVisible()
 
   // Today tab: 2-week streak, filled calendar, resumable session.
   await page.getByRole('button', { name: 'Go to Today' }).click()
@@ -18,10 +21,16 @@ test('demo mode shows a seeded 3-week-old account, never touches real data, and 
   await expect(page.getByText('Workout in progress')).toBeVisible()
   await expect(page.getByRole('button', { name: "Resume today's workout" })).toBeVisible()
 
-  // History: 9 seeded workouts, with PBs and effort labels shown.
+  // History: 9 seeded workouts, with PBs, effort labels, and unlocked bonus
+  // tips shown.
   await page.getByRole('button', { name: 'History', exact: true }).click()
   await expect(page.getByText('★ PB').first()).toBeVisible()
   await expect(page.getByText(/Casual Arc|Sigma Arc|God Mode|Aura Farming/).first()).toBeVisible()
+  await expect(page.getByText('My tips')).toBeVisible()
+
+  // Settings: the sample gym is already set.
+  await page.getByRole('button', { name: 'Settings', exact: true }).click()
+  await expect(page.getByText('Iron Temple Fitness')).toBeVisible()
 
   // Exit demo lands on the real (unseeded) /app — proves the demo never
   // touched the real localStorage-backed store.

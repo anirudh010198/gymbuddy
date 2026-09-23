@@ -62,6 +62,28 @@ export default function Privacy() {
         </p>
 
         <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
+          If you use "Find my gym"
+        </h2>
+        <p>
+          <b>What we collect:</b> if you tap "Use my location", your device's GPS coordinates are sent once, directly to
+          OpenStreetMap's free Overpass API, only to list gyms near you — never to us, and never stored anywhere, on your
+          device or off it. If you tap "None of these" or skip location entirely, you can type your gym's name instead.
+        </p>
+        <p className="mt-2">
+          <b>What we save:</b> only your gym's name and a short code derived from it, so busy-machine reports from other
+          GymBuddy users at the same gym can be shown to you (and yours to them) — never your coordinates, never which gym
+          you're at right now, just the name you picked.
+        </p>
+        <p className="mt-2">
+          <b>Why:</b> to show "usually busy"/"usually free" hints for equipment at your gym, built from everyone's "it's busy"
+          swaps. Entirely optional — the app works exactly the same without it.
+        </p>
+        <p className="mt-2">
+          <b>How to have it deleted:</b> open Settings → Your gym → "Clear", or use "Reset all data" to remove everything at
+          once.
+        </p>
+
+        <h2 className="mb-2 mt-8 font-display font-bold" style={{ fontSize: '1.4rem' }}>
           Either way
         </h2>
         <p>

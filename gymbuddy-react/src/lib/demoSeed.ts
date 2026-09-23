@@ -2,6 +2,8 @@ import { buildGroupWorkout } from '../engine/swap'
 import { addDays, parseDate, today, weekStart } from '../engine/dates'
 import { BY_ID } from '../engine/exercises'
 import { ageBracketFor, effortStyleForAge } from '../engine/age'
+import { gymCodeFor } from '../engine/gym'
+import type { BusyReport } from '../engine/busyMap'
 import type { Equip, EffortLabel, Exercise, Group, HistoryEntry, HistoryItemEntry, Profile, SetEntry } from '../engine/types'
 import type { Active, ActiveItem } from '../store/useGymStore'
 
@@ -9,6 +11,8 @@ const DEMO_EQUIP: Equip[] = ['machine', 'cable', 'dumbbell']
 const GROUP_CYCLE: Group[] = ['legs', 'push', 'pull']
 const EFFORT_CYCLE: EffortLabel[] = ['sigma', 'god', 'aura', 'casual']
 const DEMO_AGE = 27
+export const DEMO_GYM_NAME = 'Iron Temple Fitness'
+export const DEMO_GYM_CODE = gymCodeFor(DEMO_GYM_NAME, 0, 0)
 
 /** Everything computed relative to the real "today" (not a fixed date), so
  *  the demo always looks current no matter when someone opens it:
@@ -58,6 +62,7 @@ interface DemoSeed {
   profile: Profile
   history: HistoryEntry[]
   active: Active | null
+  busyReports: BusyReport[]
 }
 
 export function buildDemoSeed(): DemoSeed {
@@ -110,6 +115,10 @@ export function buildDemoSeed(): DemoSeed {
       items,
       mins: 24 + ((sessionIx * 3) % 14), // varied but deterministic, no Math.random
       group: session.group,
+      // A build-muscle goal unlocks a bonus tip the first time an exercise
+      // is fully completed — approximated here as "the group's first-ever
+      // seeded session", so "My tips" in History has something real to show.
+      tipsUnlocked: cycle === 0 ? picksByGroup[session.group].map((p) => BY_ID[p.id].bonusTip) : undefined,
     }
   })
 
@@ -124,9 +133,33 @@ export function buildDemoSeed(): DemoSeed {
     age: DEMO_AGE,
     lastGroup: lastSession.group,
     effortStyle: effortStyleForAge(ageBracketFor(DEMO_AGE)),
+    // Pre-set so the demo's Busy-Machine Map forecast works immediately —
+    // no location permission prompt needed to see it in action.
+    gymName: DEMO_GYM_NAME,
+    gymCode: DEMO_GYM_CODE,
   }
 
-  return { profile, history, active: buildDemoActive(nextGroup, picksByGroup[nextGroup], cycleSeenByGroup[nextGroup]) }
+  const active = buildDemoActive(nextGroup, picksByGroup[nextGroup], cycleSeenByGroup[nextGroup])
+  return { profile, history, active, busyReports: buildDemoBusyReports(active) }
+}
+
+/** Seeded so the forecast always has enough data "right now", whatever real
+ *  time someone actually opens /demo at: the session's first exercise gets
+ *  reports in the CURRENT real hour band (busy), the second gets one
+ *  (free), the rest none — enough to show a real "usually busy · usually
+ *  free" line without a live crowd of other demo users. */
+function buildDemoBusyReports(active: Active): BusyReport[] {
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  const hourOfDay = now.getHours()
+  const reports: BusyReport[] = []
+  active.items.forEach((it, ix) => {
+    const count = ix === 0 ? 4 : ix === 1 ? 1 : 0
+    for (let i = 0; i < count; i++) {
+      reports.push({ exerciseId: it.id, equipment: BY_ID[it.id].equip, gymCode: DEMO_GYM_CODE, dayOfWeek, hourOfDay })
+    }
+  })
+  return reports
 }
 
 /** Today's session, already started — the first exercise finished (3

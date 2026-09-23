@@ -7,11 +7,15 @@ import type { Exercise } from '../../engine/types'
 export default function ChangeExerciseSheet({
   open,
   candidates,
+  busyStatus,
   onPick,
   onClose,
 }: {
   open: boolean
   candidates: Exercise[]
+  /** Optional per-exercise "usually busy/free right now" tag from the
+   *  Busy-Machine Map — absent (or an id missing from it) just shows no tag. */
+  busyStatus?: Record<string, 'busy' | 'free'>
   onPick: (exercise: Exercise) => void
   onClose: () => void
 }) {
@@ -40,8 +44,15 @@ export default function ChangeExerciseSheet({
                 aria-expanded={expanded}
               >
                 <div>
-                  <div className="font-display font-bold" style={{ fontSize: '1.1rem' }}>
-                    {ex.name}
+                  <div className="flex items-center gap-2">
+                    <div className="font-display font-bold" style={{ fontSize: '1.1rem' }}>
+                      {ex.name}
+                    </div>
+                    {busyStatus?.[ex.id] && (
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${busyStatus[ex.id] === 'busy' ? 'bg-warn/15 text-warn' : 'bg-go/15 text-go'}`}>
+                        {busyStatus[ex.id] === 'busy' ? 'Often busy now' : 'Usually free now'}
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm text-muted">{ex.description}</div>
                 </div>

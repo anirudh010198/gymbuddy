@@ -10,6 +10,7 @@ import WeekDots from '../components/WeekDots'
 import InstallHint from '../components/InstallHint'
 import DaySelectSheet from '../components/DaySelectSheet'
 import BuildWorkoutFlow from '../components/BuildWorkoutFlow'
+import FindGymSheet from '../components/FindGymSheet'
 
 export default function Home() {
   const profile = useGym((s) => s.profile)!
@@ -20,8 +21,11 @@ export default function Home() {
   const startCustomWorkout = useGym((s) => s.startCustomWorkout)
   const setPeekHome = useGym((s) => s.setPeekHome)
   const changeGoal = useGym((s) => s.changeGoal)
+  const updateProfile = useGym((s) => s.updateProfile)
+  const trackEvent = useGym((s) => s.trackEvent)
   const [daySelectOpen, setDaySelectOpen] = useState(false)
   const [buildOpen, setBuildOpen] = useState(false)
+  const [findGymOpen, setFindGymOpen] = useState(false)
 
   const wc = weekCount(history, weekStart(today()))
   const st = streakWeeks(history, profile.target)
@@ -103,6 +107,33 @@ export default function Home() {
         </Card>
       )}
       <InstallHint eligible={history.length > 0} />
+      <Card className="mt-4 p-4">
+        {profile.gymName ? (
+          <>
+            <p className="text-sm text-muted">
+              Training at <b className="text-ink">{profile.gymName}</b>?
+            </p>
+            <button
+              type="button"
+              className="mt-1 text-sm font-semibold underline decoration-line underline-offset-2"
+              onClick={() => setFindGymOpen(true)}
+            >
+              Training somewhere else today?
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-muted">Know your gym? We can show which machines are usually busy.</p>
+            <button
+              type="button"
+              className="mt-1 text-sm font-semibold underline decoration-line underline-offset-2"
+              onClick={() => setFindGymOpen(true)}
+            >
+              Find my gym
+            </button>
+          </>
+        )}
+      </Card>
       <p className="mt-6 text-sm text-muted">Your progress is saved on this phone only.</p>
       {!done && (
         <Dock raised>
@@ -138,6 +169,14 @@ export default function Home() {
           onClose={() => setBuildOpen(false)}
         />
       )}
+      <FindGymSheet
+        open={findGymOpen}
+        onPick={(name, code, method) => {
+          updateProfile({ gymName: name, gymCode: code })
+          trackEvent('gym_located', { method })
+        }}
+        onClose={() => setFindGymOpen(false)}
+      />
     </Wrap>
   )
 }

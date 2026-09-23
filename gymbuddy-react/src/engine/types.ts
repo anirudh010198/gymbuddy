@@ -138,6 +138,11 @@ export interface Profile {
   /** Defaults from age at onboarding; always user-overridable in Settings
    *  afterward, independent of age from then on. */
   effortStyle?: EffortStyle
+  /** Optional, never blocking (see "Find My Gym") — only the gym's name and
+   *  a derived code are ever stored, never coordinates. gymCode groups
+   *  crowdsourced busy-machine reports across everyone at the same gym. */
+  gymName?: string | null
+  gymCode?: string | null
 }
 
 export interface TrackEvent {
